@@ -53,7 +53,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       if (trigger === 'signIn' && user && account) {
         try {
           const formData = new FormData();
-          formData.append('name', user.name || '歌人');
+          // バックエンドのname上限(20)で400になるため切り詰める
+          formData.append('name', (user.name || '歌人').slice(0, 20));
           formData.append('oauth_app', account.provider as ProviderType);
           if (user.email) {
             formData.append('connect_info', user.email);
@@ -61,10 +62,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             throw new Error('ユーザのメールアドレスが取得できませんでした');
           }
 
-          // アイコンURLが存在する場合は追加する
-          if (user.image) {
-            formData.append('icon_url', user.image);
-          }
+          // 画像が無いアカウントでも400にしないよう既定アイコンを送る
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+          formData.append('icon_url', user.image || `${baseUrl}/iconDefault.png`);
 
           const res = await fetch(`${process.env.BACKEND_URL}/user`, {
             method: 'POST',
@@ -72,7 +72,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           });
 
           if (!res.ok) {
-            console.error('ユーザの作成に失敗しました:', res);
+            const errorBody = await res.text();
+            console.error('ユーザの作成に失敗しました:', res.status, errorBody);
             throw new Error('ユーザの作成に失敗しました');
           }
 
