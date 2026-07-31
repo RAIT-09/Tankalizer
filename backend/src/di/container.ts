@@ -1,4 +1,4 @@
-import { S3Client } from '@aws-sdk/client-s3';
+import { AwsClient } from 'aws4fetch';
 import type { AppConfig } from '../config/env.js';
 import type { DbClient } from '../lib/dbClient.js';
 import { FollowRepository } from '../repositories/follow/followRepository.js';
@@ -51,15 +51,14 @@ export const createContainer = (config: AppConfig, db: DbClient): Container => {
   const profileRepository = new ProfileRepository(db);
   const userRepository = new UserRepository(db);
 
-  const s3Client = new S3Client({
+  const aws = new AwsClient({
+    accessKeyId: config.S3_ACCESS_KEY_ID,
+    secretAccessKey: config.S3_SECRET_ACCESS_KEY,
     region: 'ap-northeast-1',
-    credentials: {
-      accessKeyId: config.S3_ACCESS_KEY_ID,
-      secretAccessKey: config.S3_SECRET_ACCESS_KEY,
-    },
+    service: 's3',
   });
   const storageService = new S3StorageService(
-    s3Client,
+    aws,
     config.S3_BUCKET_NAME,
     config.CDN_URL
   );

@@ -26,7 +26,7 @@ export class IconService implements IIconService {
    * ユーザIDからアイコンを取得する
    * @param userId
    */
-  async getIcon(userId: string): Promise<Buffer> {
+  async getIcon(userId: string): Promise<Uint8Array> {
     // TODO : DBからユーザアイコンのURLを取得
     const icon_url = '';
     return await this.storageService.download(icon_url);
