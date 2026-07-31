@@ -2,21 +2,7 @@ import type { AppConfig } from '../config/env.js';
 import type { Container } from '../di/container.js';
 import getNews from './getNews.js';
 
-const postNews = async (requestApiKey: string, container: Container, config: AppConfig) => {
-  if (requestApiKey !== config.NEWS_POST_API_KEY) {
-    return {
-      isAuthorized: false,
-      isSuccess: false,
-      tanka: {
-        line0: 'APIキーが間違っています',
-        line1: '',
-        line2: '',
-        line3: '',
-        line4: '',
-      },
-    };
-  }
-
+export const runNewsPost = async (container: Container, config: AppConfig) => {
   const newsResponse = await getNews(config.NODE_ENV);
 
   // ニュースの取得に失敗した場合
@@ -75,6 +61,24 @@ const postNews = async (requestApiKey: string, container: Container, config: App
       },
     };
   }
+};
+
+const postNews = async (requestApiKey: string, container: Container, config: AppConfig) => {
+  if (requestApiKey !== config.NEWS_POST_API_KEY) {
+    return {
+      isAuthorized: false,
+      isSuccess: false,
+      tanka: {
+        line0: 'APIキーが間違っています',
+        line1: '',
+        line2: '',
+        line3: '',
+        line4: '',
+      },
+    };
+  }
+
+  return runNewsPost(container, config);
 };
 
 export default postNews;

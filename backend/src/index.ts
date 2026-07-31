@@ -1,6 +1,6 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { swaggerUI } from '@hono/swagger-ui';
-import type { Context } from 'hono';
+import type { Context, ExecutionContext } from 'hono';
 import { env as getRuntimeEnv } from 'hono/adapter';
 import { cors } from 'hono/cors';
 import { parseConfig, type AppConfig } from './config/env.js';
@@ -10,6 +10,7 @@ import {
   type Container,
 } from './di/container.js';
 import { DbClient } from './lib/dbClient.js';
+import { runNewsPost } from './lib/postNews.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import router from './routes/route.js';
 
@@ -59,5 +60,16 @@ routedApp.get(
 
 routedApp.onError(errorHandler);
 
-export default app;
+const scheduled = (
+  _controller: unknown,
+  env: AppEnv['Bindings'],
+  ctx: ExecutionContext
+) => {
+  const config = parseConfig(env);
+  const container = createContainer(config, new DbClient(env.DB));
+
+  ctx.waitUntil(runNewsPost(container, config));
+};
+
+export default { fetch: app.fetch, scheduled };
 export type AppType = typeof routedApp;
