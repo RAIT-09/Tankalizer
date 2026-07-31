@@ -15,7 +15,7 @@ const errorResponseSchema = z.object({
 
 export const idiconConverterRoute = createRoute({
   method: 'post',
-  path: '/convert',
+  path: '/v2/convert',
   tags: ['sample'],
   request: {
     body: {
