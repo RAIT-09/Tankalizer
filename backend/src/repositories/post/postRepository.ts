@@ -1,6 +1,6 @@
 import { type IPostRepository, type CreatePostRepoDTO, type Post } from './iPostRepository.js';
 import db from '../../lib/db.js';
-import { env } from '../../config/env.js';
+import { TABLES } from '../../config/tables.js';
 import type { GetPostRepoDTO } from '../../repositories/post/iPostRepository.js';
 import mysql from 'mysql2';
 
@@ -12,7 +12,7 @@ export class PostRepository implements IPostRepository {
    */
   async findById(id: string, dbc?: mysql.Connection): Promise<Post | null> {
     const query = `
-      SELECT * FROM ${env.POSTS_TABLE_NAME} 
+      SELECT * FROM ${TABLES.posts}
       WHERE id = :id AND is_deleted = FALSE
       LIMIT 1;
     `;
@@ -35,7 +35,7 @@ export class PostRepository implements IPostRepository {
    */
   async create(postRepoDto: CreatePostRepoDTO): Promise<void> {
     const sql = `
-      INSERT INTO ${env.POSTS_TABLE_NAME}
+      INSERT INTO ${TABLES.posts}
         (original, tanka, image_path, user_id)
       VALUES
         (:original, :tanka, :image_path, :user_id);
@@ -70,7 +70,7 @@ export class PostRepository implements IPostRepository {
    */
   async delete(id: string, userId: string): Promise<void> {
     const sql = `
-      UPDATE ${env.POSTS_TABLE_NAME}
+      UPDATE ${TABLES.posts}
       SET is_deleted = TRUE
       WHERE id = :id AND user_id = :userId;
     `;
@@ -102,7 +102,7 @@ export class PostRepository implements IPostRepository {
     if (cursor) {
       // 指定されたカーソル（投稿ID）より作成日時が古い投稿を取得
       whereClauses.push(
-        `posts.created_at < (SELECT created_at FROM ${env.POSTS_TABLE_NAME} WHERE id = :cursor)`
+        `posts.created_at < (SELECT created_at FROM ${TABLES.posts} WHERE id = :cursor)`
       );
       params.cursor = cursor;
     }
@@ -111,11 +111,11 @@ export class PostRepository implements IPostRepository {
     // viewerIdが指定されている時だけ，miyabisテーブルを正しくJOINして is_miyabi を判定する
     let miyabiJoinClause: string;
     if (viewerId) {
-      miyabiJoinClause = `LEFT JOIN ${env.MIYABI_TABLE_NAME} AS miyabi ON posts.id = miyabi.post_id AND miyabi.user_id = :viewerId`;
+      miyabiJoinClause = `LEFT JOIN ${TABLES.miyabis} AS miyabi ON posts.id = miyabi.post_id AND miyabi.user_id = :viewerId`;
       params.viewerId = viewerId;
     } else {
       // viewerIdがなければ is_miyabi は常に false になる
-      miyabiJoinClause = `LEFT JOIN ${env.MIYABI_TABLE_NAME} AS miyabi ON 1 = 0`;
+      miyabiJoinClause = `LEFT JOIN ${TABLES.miyabis} AS miyabi ON 1 = 0`;
     }
 
     // 最終的なSQL文を組み立てる
@@ -129,16 +129,16 @@ export class PostRepository implements IPostRepository {
         posts.user_id,
         users.name AS user_name,
         users.icon_url AS user_icon,
-        (SELECT COUNT(*) FROM ${env.MIYABI_TABLE_NAME} WHERE post_id = posts.id) AS miyabi_count,
+        (SELECT COUNT(*) FROM ${TABLES.miyabis} WHERE post_id = posts.id) AS miyabi_count,
         CASE WHEN miyabi.id IS NOT NULL THEN TRUE ELSE FALSE END AS is_miyabi,
         CASE WHEN developers.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_developer
       FROM
-        ${env.POSTS_TABLE_NAME} AS posts
+        ${TABLES.posts} AS posts
       JOIN
-        ${env.USERS_TABLE_NAME} AS users ON posts.user_id = users.id
+        ${TABLES.users} AS users ON posts.user_id = users.id
       ${miyabiJoinClause}
       LEFT JOIN
-        ${env.DEVELOPERS_TABLE_NAME} AS developers ON posts.user_id = developers.user_id
+        ${TABLES.developers} AS developers ON posts.user_id = developers.user_id
       WHERE
         ${whereClauses.join(' AND ')}
       ORDER BY
@@ -176,11 +176,11 @@ export class PostRepository implements IPostRepository {
     // viewerIdが指定されている時だけ，miyabisテーブルを正しくJOINして is_miyabi を判定する
     let miyabiJoinClause: string;
     if (viewerId) {
-      miyabiJoinClause = `LEFT JOIN ${env.MIYABI_TABLE_NAME} AS miyabi ON posts.id = miyabi.post_id AND miyabi.user_id = :viewerId`;
+      miyabiJoinClause = `LEFT JOIN ${TABLES.miyabis} AS miyabi ON posts.id = miyabi.post_id AND miyabi.user_id = :viewerId`;
       params.viewerId = viewerId;
     } else {
       // viewerIdがなければ is_miyabi は常に false になる
-      miyabiJoinClause = `LEFT JOIN ${env.MIYABI_TABLE_NAME} AS miyabi ON 1 = 0`;
+      miyabiJoinClause = `LEFT JOIN ${TABLES.miyabis} AS miyabi ON 1 = 0`;
     }
 
     // ここからDBのpostテーブルから情報取得
@@ -194,16 +194,16 @@ export class PostRepository implements IPostRepository {
         posts.user_id,
         users.name AS user_name,
         users.icon_url AS user_icon,
-        (SELECT COUNT(*) FROM ${env.MIYABI_TABLE_NAME} WHERE post_id = posts.id) AS miyabi_count,
+        (SELECT COUNT(*) FROM ${TABLES.miyabis} WHERE post_id = posts.id) AS miyabi_count,
         CASE WHEN miyabi.id IS NOT NULL THEN TRUE ELSE FALSE END AS is_miyabi,
         CASE WHEN developers.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_developer  
       FROM
-        ${env.POSTS_TABLE_NAME} AS posts
+        ${TABLES.posts} AS posts
       JOIN
-        ${env.USERS_TABLE_NAME} AS users ON posts.user_id = users.id
+        ${TABLES.users} AS users ON posts.user_id = users.id
       ${miyabiJoinClause}
       LEFT JOIN
-        ${env.DEVELOPERS_TABLE_NAME} AS developers ON posts.user_id = developers.user_id
+        ${TABLES.developers} AS developers ON posts.user_id = developers.user_id
       WHERE
         ${whereClauses.join(' AND ')}
     `;
@@ -243,7 +243,7 @@ export class PostRepository implements IPostRepository {
     if (cursor) {
       // 指定されたカーソル（投稿ID）より作成日時が古い投稿を取得
       whereClauses.push(
-        `posts.created_at < (SELECT created_at FROM ${env.POSTS_TABLE_NAME} WHERE id = :cursor)`
+        `posts.created_at < (SELECT created_at FROM ${TABLES.posts} WHERE id = :cursor)`
       );
       params.cursor = cursor;
     }
@@ -252,11 +252,11 @@ export class PostRepository implements IPostRepository {
     // viewerIdが指定されている時だけ，miyabisテーブルを正しくJOINして is_miyabi を判定する
     let miyabiJoinClause: string;
     if (viewerId) {
-      miyabiJoinClause = `LEFT JOIN ${env.MIYABI_TABLE_NAME} AS miyabi ON posts.id = miyabi.post_id AND miyabi.user_id = :viewerId`;
+      miyabiJoinClause = `LEFT JOIN ${TABLES.miyabis} AS miyabi ON posts.id = miyabi.post_id AND miyabi.user_id = :viewerId`;
       params.viewerId = viewerId;
     } else {
       // viewerIdがなければ is_miyabi は常に false になる
-      miyabiJoinClause = `LEFT JOIN ${env.MIYABI_TABLE_NAME} AS miyabi ON 1 = 0`;
+      miyabiJoinClause = `LEFT JOIN ${TABLES.miyabis} AS miyabi ON 1 = 0`;
     }
 
     // 最終的なSQL文を組み立てる
@@ -270,17 +270,15 @@ export class PostRepository implements IPostRepository {
         posts.user_id,
         users.name AS user_name,
         users.icon_url AS user_icon,
-        (EXISTS (SELECT 1 FROM ${
-          env.DEVELOPERS_TABLE_NAME
-        } WHERE user_id = posts.user_id)) AS is_developer,
-        (SELECT COUNT(*) FROM ${env.MIYABI_TABLE_NAME} WHERE post_id = posts.id) AS miyabi_count,
+        (EXISTS (SELECT 1 FROM ${TABLES.developers} WHERE user_id = posts.user_id)) AS is_developer,
+        (SELECT COUNT(*) FROM ${TABLES.miyabis} WHERE post_id = posts.id) AS miyabi_count,
         CASE WHEN miyabi.id IS NOT NULL THEN TRUE ELSE FALSE END AS is_miyabi
       FROM
-        ${env.POSTS_TABLE_NAME} AS posts
+        ${TABLES.posts} AS posts
       INNER JOIN
-        ${env.FOLLOWS_TABLE_NAME} AS follows ON posts.user_id = follows.followee_id
+        ${TABLES.follows} AS follows ON posts.user_id = follows.followee_id
       INNER JOIN
-        ${env.USERS_TABLE_NAME} AS users ON posts.user_id = users.id
+        ${TABLES.users} AS users ON posts.user_id = users.id
       ${miyabiJoinClause}
       WHERE
         ${whereClauses.join(' AND ')}

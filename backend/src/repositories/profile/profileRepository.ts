@@ -6,7 +6,7 @@ import {
   type GetMutualFollowingUserRepoDto,
 } from './iProfileRepository.js';
 import db from '../../lib/db.js';
-import { env } from '../../config/env.js';
+import { TABLES } from '../../config/tables.js';
 
 export class ProfileRepository implements IProfileRepository {
   /**
@@ -20,7 +20,7 @@ export class ProfileRepository implements IProfileRepository {
 
     // viewer_id が指定されている場合, フォロー状態を確認するSELECT句を追加
     const followCheckClause = viewer_id
-      ? `(EXISTS (SELECT 1 FROM ${env.FOLLOWS_TABLE_NAME} WHERE follower_id = :viewer_id AND followee_id = u.id)) AS is_following`
+      ? `(EXISTS (SELECT 1 FROM ${TABLES.follows} WHERE follower_id = :viewer_id AND followee_id = u.id)) AS is_following`
       : 'FALSE AS is_following';
 
     const sql = `
@@ -31,34 +31,34 @@ export class ProfileRepository implements IProfileRepository {
         u.icon_url,
         u.created_at,
         ${followCheckClause}, -- フォロー状態を確認する句
-        (EXISTS (SELECT 1 FROM ${env.DEVELOPERS_TABLE_NAME} WHERE user_id = u.id)) AS is_developer,
+        (EXISTS (SELECT 1 FROM ${TABLES.developers} WHERE user_id = u.id)) AS is_developer,
         -- ユーザーの全投稿に対する雅の総数をカウント
         (
           SELECT COUNT(*)
-          FROM ${env.MIYABI_TABLE_NAME} m
-          JOIN ${env.POSTS_TABLE_NAME} p ON m.post_id = p.id
+          FROM ${TABLES.miyabis} m
+          JOIN ${TABLES.posts} p ON m.post_id = p.id
           WHERE p.user_id = u.id
         ) AS total_miyabi,
         -- 削除されていない投稿の総数をカウント
         (
           SELECT COUNT(*)
-          FROM ${env.POSTS_TABLE_NAME} p
+          FROM ${TABLES.posts} p
           WHERE p.user_id = u.id AND p.is_deleted = FALSE
         ) AS total_post,
         -- ユーザーがフォローしている人数をカウント
         (
           SELECT COUNT(*)
-          FROM ${env.FOLLOWS_TABLE_NAME} f
+          FROM ${TABLES.follows} f
           WHERE f.follower_id = u.id
         ) AS following_count,
         -- ユーザーをフォローしている人数（フォロワー）をカウント
         (
           SELECT COUNT(*)
-          FROM ${env.FOLLOWS_TABLE_NAME} f
+          FROM ${TABLES.follows} f
           WHERE f.followee_id = u.id
         ) AS follower_count
       FROM
-        ${env.USERS_TABLE_NAME} u
+        ${TABLES.users} u
       WHERE
         u.id = :user_id
     `;
@@ -102,7 +102,7 @@ export class ProfileRepository implements IProfileRepository {
     const { user_id, user_name, profile_text, image_path } = updateProfileRepoDto;
 
     const sql = `
-      UPDATE ${env.USERS_TABLE_NAME}
+      UPDATE ${TABLES.users}
       SET
         name = :user_name,
         profile_text = :profile_text,
@@ -141,7 +141,7 @@ export class ProfileRepository implements IProfileRepository {
     }
 
     const followCheckClause = viewer_id
-      ? `(EXISTS (SELECT 1 FROM ${env.FOLLOWS_TABLE_NAME} WHERE follower_id = :viewer_id AND followee_id = u.id)) AS is_following`
+      ? `(EXISTS (SELECT 1 FROM ${TABLES.follows} WHERE follower_id = :viewer_id AND followee_id = u.id)) AS is_following`
       : 'FALSE AS is_following';
 
     const sql = `
@@ -152,32 +152,32 @@ export class ProfileRepository implements IProfileRepository {
         u.icon_url,
         u.created_at,
         ${followCheckClause},
-        (EXISTS (SELECT 1 FROM ${env.DEVELOPERS_TABLE_NAME} WHERE user_id = u.id)) AS is_developer,
+        (EXISTS (SELECT 1 FROM ${TABLES.developers} WHERE user_id = u.id)) AS is_developer,
         (
           SELECT COUNT(*)
-          FROM ${env.MIYABI_TABLE_NAME} m
-          JOIN ${env.POSTS_TABLE_NAME} p ON m.post_id = p.id
+          FROM ${TABLES.miyabis} m
+          JOIN ${TABLES.posts} p ON m.post_id = p.id
           WHERE p.user_id = u.id
         ) AS total_miyabi,
         (
           SELECT COUNT(*)
-          FROM ${env.POSTS_TABLE_NAME} p
+          FROM ${TABLES.posts} p
           WHERE p.user_id = u.id AND p.is_deleted = FALSE
         ) AS total_post,
         (
           SELECT COUNT(*)
-          FROM ${env.FOLLOWS_TABLE_NAME} f
+          FROM ${TABLES.follows} f
           WHERE f.follower_id = u.id
         ) AS following_count,
         (
           SELECT COUNT(*)
-          FROM ${env.FOLLOWS_TABLE_NAME} f
+          FROM ${TABLES.follows} f
           WHERE f.followee_id = u.id
         ) AS follower_count
       FROM
-        ${env.USERS_TABLE_NAME} u
+        ${TABLES.users} u
       JOIN
-        ${env.FOLLOWS_TABLE_NAME} f ON u.id = f.followee_id
+        ${TABLES.follows} f ON u.id = f.followee_id
       WHERE
         f.follower_id = :user_id
         ${cursorClause}
@@ -234,7 +234,7 @@ export class ProfileRepository implements IProfileRepository {
     }
 
     const followCheckClause = viewer_id
-      ? `(EXISTS (SELECT 1 FROM ${env.FOLLOWS_TABLE_NAME} WHERE follower_id = :viewer_id AND followee_id = u.id)) AS is_following`
+      ? `(EXISTS (SELECT 1 FROM ${TABLES.follows} WHERE follower_id = :viewer_id AND followee_id = u.id)) AS is_following`
       : 'FALSE AS is_following';
 
     const sql = `
@@ -245,34 +245,34 @@ export class ProfileRepository implements IProfileRepository {
       u.icon_url,
       u.created_at,
       ${followCheckClause},
-      (EXISTS (SELECT 1 FROM ${env.DEVELOPERS_TABLE_NAME} WHERE user_id = u.id)) AS is_developer,
+      (EXISTS (SELECT 1 FROM ${TABLES.developers} WHERE user_id = u.id)) AS is_developer,
       (
         SELECT COUNT(*)
-        FROM ${env.MIYABI_TABLE_NAME} m
-        JOIN ${env.POSTS_TABLE_NAME} p ON m.post_id = p.id
+        FROM ${TABLES.miyabis} m
+        JOIN ${TABLES.posts} p ON m.post_id = p.id
         WHERE p.user_id = u.id
       ) AS total_miyabi,
       (
         SELECT COUNT(*)
-        FROM ${env.POSTS_TABLE_NAME} p
+        FROM ${TABLES.posts} p
         WHERE p.user_id = u.id AND p.is_deleted = FALSE
       ) AS total_post,
       (
         SELECT COUNT(*)
-        FROM ${env.FOLLOWS_TABLE_NAME} f
+        FROM ${TABLES.follows} f
         WHERE f.follower_id = u.id
       ) AS following_count,
       (
         SELECT COUNT(*)
-        FROM ${env.FOLLOWS_TABLE_NAME} f
+        FROM ${TABLES.follows} f
         WHERE f.followee_id = u.id
       ) AS follower_count
     FROM
-      ${env.USERS_TABLE_NAME} u
+      ${TABLES.users} u
     JOIN
-      ${env.FOLLOWS_TABLE_NAME} f1 ON u.id = f1.followee_id AND f1.follower_id = :user_id
+      ${TABLES.follows} f1 ON u.id = f1.followee_id AND f1.follower_id = :user_id
     JOIN
-      ${env.FOLLOWS_TABLE_NAME} f2 ON u.id = f2.follower_id AND f2.followee_id = :user_id
+      ${TABLES.follows} f2 ON u.id = f2.follower_id AND f2.followee_id = :user_id
     WHERE
       u.id != :user_id -- 自分自身は除外 (念のため)
       ${cursorClause}

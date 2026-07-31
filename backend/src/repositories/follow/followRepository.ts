@@ -1,5 +1,5 @@
 import db from '../../lib/db.js';
-import { env } from '../../config/env.js';
+import { TABLES } from '../../config/tables.js';
 import mysql from 'mysql2';
 import type { IFollowRepository } from './iFollowRepository.js';
 
@@ -19,7 +19,7 @@ export class FollowRepository implements IFollowRepository {
     dbc?: mysql.Connection
   ): Promise<void> {
     const query = `
-      INSERT INTO ${env.FOLLOWS_TABLE_NAME} (follower_id, followee_id)
+      INSERT INTO ${TABLES.follows} (follower_id, followee_id)
       VALUES (:followerId, :followeeId)
     `;
     const params = { followerId, followeeId };
@@ -57,7 +57,7 @@ export class FollowRepository implements IFollowRepository {
     dbc?: mysql.Connection
   ): Promise<void> {
     const query = `
-      DELETE FROM ${env.FOLLOWS_TABLE_NAME}
+      DELETE FROM ${TABLES.follows}
       WHERE follower_id = :followerId AND followee_id = :followeeId
     `;
     const params = { followerId, followeeId };
@@ -97,7 +97,7 @@ export class FollowRepository implements IFollowRepository {
   ): Promise<boolean> {
     const query = `
       SELECT COUNT(*) as count
-      FROM ${env.FOLLOWS_TABLE_NAME}
+      FROM ${TABLES.follows}
       WHERE follower_id = :followerId AND followee_id = :followeeId
     `;
     const params = { followerId, followeeId };

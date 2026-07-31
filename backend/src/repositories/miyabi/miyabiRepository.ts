@@ -1,6 +1,6 @@
 import { type IMiyabiRepository, type Miyabi, type RankedPost } from './iMiyabiRepository.js';
 import db from '../../lib/db.js';
-import { env } from '../../config/env.js';
+import { TABLES } from '../../config/tables.js';
 import mysql from 'mysql2';
 
 export class MiyabiRepository implements IMiyabiRepository {
@@ -12,7 +12,7 @@ export class MiyabiRepository implements IMiyabiRepository {
    */
   async findMiyabi(userId: string, postId: string, dbc?: mysql.Connection): Promise<Miyabi | null> {
     const query = `
-    SELECT * FROM ${env.MIYABI_TABLE_NAME}
+    SELECT * FROM ${TABLES.miyabis}
     WHERE user_id = :user_id AND post_id = :post_id
     LIMIT 1;
   `;
@@ -37,7 +37,7 @@ export class MiyabiRepository implements IMiyabiRepository {
    */
   async create(userId: string, postId: string, dbc?: mysql.Connection): Promise<void> {
     const query = `
-      INSERT INTO ${env.MIYABI_TABLE_NAME}
+      INSERT INTO ${TABLES.miyabis}
       (user_id, post_id)
       VALUES (:userId, :postId);
     `;
@@ -69,7 +69,7 @@ export class MiyabiRepository implements IMiyabiRepository {
    * @returns {Promise<void>}
    */
   async delete(userId: string, postId: string, dbc?: mysql.Connection): Promise<void> {
-    const query = `DELETE FROM ${env.MIYABI_TABLE_NAME} WHERE user_id = :userId AND post_id = :postId;`;
+    const query = `DELETE FROM ${TABLES.miyabis} WHERE user_id = :userId AND post_id = :postId;`;
     const option = { userId, postId };
     try {
       if (dbc) {
@@ -103,7 +103,7 @@ export class MiyabiRepository implements IMiyabiRepository {
     // viewerId が指定されている場合，閲覧者が雅済みかチェックする句を動的に生成
     let isMiyabiClause: string;
     if (viewerId) {
-      isMiyabiClause = `(EXISTS (SELECT 1 FROM ${env.MIYABI_TABLE_NAME} WHERE post_id = p.id AND user_id = :viewerId))`;
+      isMiyabiClause = `(EXISTS (SELECT 1 FROM ${TABLES.miyabis} WHERE post_id = p.id AND user_id = :viewerId))`;
       params.viewerId = viewerId;
     } else {
       // viewerIdがなければ，is_miyabiは常にfalse
@@ -120,17 +120,17 @@ export class MiyabiRepository implements IMiyabiRepository {
         p.user_id,
         u.name AS user_name,
         u.icon_url AS user_icon,
-        (EXISTS (SELECT 1 FROM ${env.DEVELOPERS_TABLE_NAME} WHERE user_id = u.id)) AS is_developer,
+        (EXISTS (SELECT 1 FROM ${TABLES.developers} WHERE user_id = u.id)) AS is_developer,
         COUNT(m.id) AS miyabi_count,
         ${isMiyabiClause} AS is_miyabi
       FROM
-        ${env.POSTS_TABLE_NAME} AS p
+        ${TABLES.posts} AS p
       -- 投稿者情報を取得するためにusersテーブルをJOIN
       JOIN
-        ${env.USERS_TABLE_NAME} AS u ON p.user_id = u.id
+        ${TABLES.users} AS u ON p.user_id = u.id
       -- 雅の数を集計するためにmiyabisテーブルをJOIN
       JOIN
-        ${env.MIYABI_TABLE_NAME} AS m ON p.id = m.post_id
+        ${TABLES.miyabis} AS m ON p.id = m.post_id
       WHERE
         -- 直近7日間の投稿に絞る
         p.created_at >= (NOW() - INTERVAL 7 DAY)

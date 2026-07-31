@@ -1,6 +1,6 @@
 import { type IUserRepository, type CreateUserRepoDTO, type User } from './iUserRepository.js';
 import db from '../../lib/db.js';
-import { env } from '../../config/env.js';
+import { TABLES } from '../../config/tables.js';
 import mysql from 'mysql2';
 
 export class UserRepository implements IUserRepository {
@@ -11,7 +11,7 @@ export class UserRepository implements IUserRepository {
    */
   async findByEmail(connect_info: string, oauth_app: 'github' | 'google'): Promise<User | null> {
     const sql = `
-      SELECT * FROM ${env.USERS_TABLE_NAME} 
+      SELECT * FROM ${TABLES.users}
       WHERE connect_info = :connect_info
       AND oauth_app = :oauth_app
       LIMIT 1;
@@ -28,7 +28,7 @@ export class UserRepository implements IUserRepository {
    */
   async findById(id: string, dbc?: mysql.Connection): Promise<User | null> {
     const query = `
-      SELECT * FROM ${env.USERS_TABLE_NAME} 
+      SELECT * FROM ${TABLES.users}
       WHERE id = :id
       LIMIT 1;
     `;
@@ -51,7 +51,7 @@ export class UserRepository implements IUserRepository {
    */
   async findByOldIconUrl(oldIconUrl: string): Promise<User | null> {
     const sql = `
-      SELECT * FROM ${env.USERS_TABLE_NAME} 
+      SELECT * FROM ${TABLES.users}
       WHERE old_icon_url = :oldIconUrl
       LIMIT 1;
     `;
@@ -66,7 +66,7 @@ export class UserRepository implements IUserRepository {
    */
   async create(user: CreateUserRepoDTO): Promise<void> {
     const sql = `
-      INSERT INTO ${env.USERS_TABLE_NAME} 
+      INSERT INTO ${TABLES.users}
       (id, name, oauth_app, connect_info, profile_text, icon_url) 
       VALUES (:id, :name, :oauth_app, :connect_info, :profile_text, :icon_url);
     `;
@@ -101,7 +101,7 @@ export class UserRepository implements IUserRepository {
    */
   async updateConnectInfoAndIcon(id: string, connect_info: string, oauth_app: 'github' | 'google', icon_url: string): Promise<void> {
     const sql = `
-      UPDATE ${env.USERS_TABLE_NAME}
+      UPDATE ${TABLES.users}
       SET connect_info = :connect_info,
           oauth_app = :oauth_app,
           icon_url = :icon_url
