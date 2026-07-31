@@ -2,7 +2,6 @@ import type { Context } from 'hono';
 import { env } from '../config/env.js';
 import getNews from './getNews.js';
 import generateTanka from './gemini.js';
-import createPostHandler from '../controllers/Post/createPostHandler.js';
 
 const printLine = (): void => {
   console.log('--------------------------------');
