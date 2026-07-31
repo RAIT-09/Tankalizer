@@ -1,4 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
+import type { AppEnv } from '../di/container.js';
 import followHandler from '../controllers/Follow/followHandler.js';
 import unfollowHandler from '../controllers/Follow/unfollowHandler.js';
 import createMiyabiHandlerV2 from '../controllers/Miyabi/createMiyabiHandlerV2.js';
@@ -38,7 +39,7 @@ import { helloRoute } from './helloRoute.js';
 import { idiconConverterRoute } from './idiconConverterRoute.js';
 import { isOurAccountRoute } from './isOurAccountRoute.js';
 
-const router = new OpenAPIHono();
+const router = new OpenAPIHono<AppEnv>();
 
 export default router
   .openapi(helloRoute, helloWorldHandler)

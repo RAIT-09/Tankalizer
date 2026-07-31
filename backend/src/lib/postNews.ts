@@ -1,14 +1,9 @@
-import type { Context } from 'hono';
-import { env } from '../config/env.js';
+import type { AppConfig } from '../config/env.js';
+import type { Container } from '../di/container.js';
 import getNews from './getNews.js';
-import generateTanka from './gemini.js';
 
-const printLine = (): void => {
-  console.log('--------------------------------');
-};
-
-const postNews = async (requestApiKey: string) => {
-  if (requestApiKey !== env.NEWS_POST_API_KEY) {
+const postNews = async (requestApiKey: string, container: Container, config: AppConfig) => {
+  if (requestApiKey !== config.NEWS_POST_API_KEY) {
     return {
       isAuthorized: false,
       isSuccess: false,
@@ -22,7 +17,7 @@ const postNews = async (requestApiKey: string) => {
     };
   }
 
-  const newsResponse = await getNews();
+  const newsResponse = await getNews(config.NODE_ENV);
 
   // ニュースの取得に失敗した場合
   if (!newsResponse.isSuccess || !newsResponse.news) {
@@ -47,37 +42,24 @@ const postNews = async (requestApiKey: string) => {
   console.log('originalText', originalText);
 
   try {
-    const formData = new FormData();
-    formData.append('original', originalText);
-    formData.append('user_id', env.NEWS_USER_ID);
-
-    const postResponse = await fetch(`http://localhost:8080/v2/post`, {
-      method: 'POST',
-      body: formData,
+    const postResponse = await container.postService.createPost({
+      original: originalText,
+      image: null,
+      user_id: config.NEWS_USER_ID,
     });
 
     console.log('postResponse', postResponse);
 
-    if (!postResponse.ok) {
-      return {
-        isAuthorized: true,
-        isSuccess: false,
-        tanka: {
-          line0: '',
-          line1: '',
-          line2: '',
-          line3: '',
-          line4: '',
-        },
-      };
-    }
-
-    const json = await postResponse.json();
-
     return {
       isAuthorized: true,
       isSuccess: true,
-      tanka: json.tanka,
+      tanka: {
+        line0: postResponse.tanka[0] ?? '',
+        line1: postResponse.tanka[1] ?? '',
+        line2: postResponse.tanka[2] ?? '',
+        line3: postResponse.tanka[3] ?? '',
+        line4: postResponse.tanka[4] ?? '',
+      },
     };
   } catch (error) {
     console.error(error);

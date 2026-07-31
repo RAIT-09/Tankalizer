@@ -1,13 +1,11 @@
 import { z, type RouteHandler } from '@hono/zod-openapi';
-import type { Context } from 'hono';
 import { idiconConverterSchema } from '../schema/idiconConverterSchema.js';
 import type { idiconConverterRoute } from '../routes/idiconConverterRoute.js';
+import type { AppEnv } from '../di/container.js';
 
 type idiconConverterSchema = z.infer<typeof idiconConverterSchema>;
 
-const idiconConverterHandler: RouteHandler<typeof idiconConverterRoute, {}> = async (
-  c: Context
-) => {
+const idiconConverterHandler: RouteHandler<typeof idiconConverterRoute, AppEnv> = async (c) => {
   try {
     // 受け取ったjsonを各変数に格納
     const { input } = await c.req.json<idiconConverterSchema>();

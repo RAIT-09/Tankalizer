@@ -1,5 +1,4 @@
 import mysql from 'mysql2';
-import { env } from '../config/env.js';
 
 class DatabaseUtility {
   private queryFormat: any;
@@ -16,10 +15,10 @@ class DatabaseUtility {
   private connect(callback: (dbc: mysql.Connection) => Promise<any>): Promise<any> {
     return new Promise((resolve, reject) => {
       const dbc = mysql.createConnection({
-        host: env.RDB_HOST,
-        user: env.RDB_USER,
-        password: env.RDB_PASSWORD,
-        database: env.RDB_NAME,
+        host: process.env.RDB_HOST,
+        user: process.env.RDB_USER,
+        password: process.env.RDB_PASSWORD,
+        database: process.env.RDB_NAME,
       });
       dbc.connect((error) => {
         if (error) {

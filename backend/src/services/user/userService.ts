@@ -4,9 +4,7 @@ import {
   type CreateUserRepoDTO,
   type User,
 } from '../../repositories/user/iUserRepository.js';
-import { type IImageService } from '../image/iImageService.js';
 import { compressIconImage } from '../../utils/compressImage.js';
-import { env } from '../../config/env.js';
 import type { IIconService } from '../icon/iIconService.js';
 import { generateUuid } from '../../utils/generateUuid.js';
 import type { CreateUserResponse } from './iUserService.js';
@@ -15,7 +13,8 @@ export class UserService implements IUserService {
   // userRepositoryのインスタンスをコンストラクタで受け取る
   constructor(
     private readonly userRepository: IUserRepository,
-    private readonly iconService: IIconService
+    private readonly iconService: IIconService,
+    private readonly defaultIconPath: string
   ) {}
 
   /**
@@ -104,11 +103,11 @@ export class UserService implements IUserService {
         // S3にアップロード
         return await this.iconService.updatedIcon(compressedFile, userId);
       } else {
-        return env.DEFAULT_ICON_PATH;
+        return this.defaultIconPath;
       }
     } catch (error) {
       console.error('[UserService#uploadIcon] 画像のアップロードに失敗しました．');
-      return env.DEFAULT_ICON_PATH;
+      return this.defaultIconPath;
     }
   }
 

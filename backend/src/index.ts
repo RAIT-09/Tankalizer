@@ -1,25 +1,48 @@
+import 'dotenv/config';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
+import type { Context } from 'hono';
+import { env as getRuntimeEnv } from 'hono/adapter';
 import { cors } from 'hono/cors';
-import { env } from './config/env.js';
-import router from './routes/route.js';
+import { parseConfig, type AppConfig } from './config/env.js';
+import {
+  createContainer,
+  type AppEnv,
+  type Container,
+} from './di/container.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import router from './routes/route.js';
 
-const app = new OpenAPIHono().route('/', router);
+let cachedConfig: AppConfig | undefined;
+let cachedContainer: Container | undefined;
 
-// CORS設定
-const frontendUrl = env.FRONTEND_URL;
+const app = new OpenAPIHono<AppEnv>();
+
+app.use('*', async (c, next) => {
+  if (!cachedConfig || !cachedContainer) {
+    cachedConfig = parseConfig(getRuntimeEnv<Record<string, unknown>>(c));
+    cachedContainer = createContainer(cachedConfig);
+  }
+
+  c.set('config', cachedConfig);
+  c.set('container', cachedContainer);
+  await next();
+});
+
 app.use(
+  '*',
   cors({
-    origin: frontendUrl,
+    origin: (_origin, c) => (c as Context<AppEnv>).get('config').FRONTEND_URL,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     exposeHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
-app.doc('/docs/json', {
+const routedApp = app.route('/', router);
+
+routedApp.doc('/docs/json', {
   openapi: '3.1.0',
   info: {
     title: 'Tankalizer API',
@@ -28,22 +51,21 @@ app.doc('/docs/json', {
   },
 });
 
-// Swagger UI
-app.get(
+routedApp.get(
   '/docs',
   swaggerUI({
     url: '/docs/json',
   })
 );
 
-app.onError(errorHandler);
+routedApp.onError(errorHandler);
 
-const port = env.PORT || 8080;
+const port = Number(process.env.PORT) || 8080;
 console.log(`Server is running on http://localhost:${port}`);
 
 serve({
-  fetch: app.fetch,
+  fetch: routedApp.fetch,
   port,
 });
 
-export type AppType = typeof app;
+export type AppType = typeof routedApp;

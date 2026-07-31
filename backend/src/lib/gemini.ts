@@ -1,5 +1,3 @@
-import type { Context } from 'hono';
-import { env } from '../config/env.js';
 import { GoogleGenAI, Type, ApiError, ThinkingLevel } from '@google/genai';
 import { readFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
@@ -9,7 +7,11 @@ const printLine = (): void => {
   console.log('--------------------------------');
 };
 
-const generateTanka = async (originalText: string, image: File | null = null): Promise<any> => {
+const generateTanka = async (
+  originalText: string,
+  image: File | null = null,
+  apiKey: string
+): Promise<any> => {
   // Geminiで短歌生成
 
   try {
@@ -17,7 +19,6 @@ const generateTanka = async (originalText: string, image: File | null = null): P
       throw new Error('原文が指定されていません。');
     }
 
-    const apiKey = env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error('API キーが設定されていません。');
     }

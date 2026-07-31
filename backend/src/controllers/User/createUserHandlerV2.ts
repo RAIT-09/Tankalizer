@@ -1,35 +1,11 @@
 import { type RouteHandler } from '@hono/zod-openapi';
-import type { Context } from 'hono';
-import { z } from 'zod';
 
 import type { createUserRouteV2 } from '../../routes/User/createUserRouteV2.js';
-import { type IUserService } from '../../services/user/iUserService.js';
-import { type IUserRepository } from '../../repositories/user/iUserRepository.js';
-import { UserService } from '../../services/user/userService.js';
-import { UserRepository } from '../../repositories/user/userRepository.js';
 import type { CreateUserDTO } from '../../services/user/iUserService.js';
+import type { AppEnv } from '../../di/container.js';
 
-import { S3StorageService } from '../../services/storage/s3StorageService.js';
-import type { IStorageService } from '../../services/storage/iStorageService.js';
-import { S3Client } from '@aws-sdk/client-s3';
-import { env } from '../../config/env.js';
-import { IconService } from '../../services/icon/iconService.js';
-import type { IIconService } from '../../services/icon/iIconService.js';
-
-const userRepository: IUserRepository = new UserRepository();
-// s3設定
-const s3Client = new S3Client({
-  region: 'ap-northeast-1',
-  credentials: {
-    accessKeyId: env.S3_ACCESS_KEY_ID,
-    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-  },
-});
-const storageService: IStorageService = new S3StorageService(s3Client, env.S3_BUCKET_NAME);
-const iconService: IIconService = new IconService(storageService);
-const userService: IUserService = new UserService(userRepository, iconService);
-
-const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, {}> = async (c: Context) => {
+const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, AppEnv> = async (c) => {
+  const { userService } = c.get('container');
   try {
     // リクエストからデータを取得
     const formData = await c.req.formData();

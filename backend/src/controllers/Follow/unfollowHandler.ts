@@ -1,12 +1,8 @@
 import { type RouteHandler } from '@hono/zod-openapi';
-import type { Context } from 'hono';
 
 import type { unfollowRoute } from '../../routes/Follow/unfollowRoute.js';
-import { FollowService } from '../../services/follow/followService.js';
-import { FollowRepository } from '../../repositories/follow/followRepository.js';
-import type { IFollowService } from '../../services/follow/iFollowService.js';
 import { FollowError } from '../../services/follow/iFollowService.js';
-import type { IFollowRepository } from '../../repositories/follow/iFollowRepository.js';
+import type { AppEnv } from '../../di/container.js';
 
 /**
  * アンフォロー機能のハンドラー
@@ -15,15 +11,12 @@ import type { IFollowRepository } from '../../repositories/follow/iFollowReposit
  * レスポンスを返す
  */
 
-// 依存性注入：リポジトリとサービスのインスタンスを作成
-const followRepository: IFollowRepository = new FollowRepository();
-const followService: IFollowService = new FollowService(followRepository);
-
 /**
  * アンフォロー処理のハンドラー関数
  * POST /unfollow のリクエストを処理
  */
-const unfollowHandler: RouteHandler<typeof unfollowRoute, {}> = async (c: Context) => {
+const unfollowHandler: RouteHandler<typeof unfollowRoute, AppEnv> = async (c) => {
+  const { followService } = c.get('container');
   // リクエストボディからデータを取得
   const { followerId, followeeId } = await c.req.json();
 

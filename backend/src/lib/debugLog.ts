@@ -1,7 +1,5 @@
-import { env } from '../config/env.js';
-
-const debugLog = (data: any): void => {
-  if (env.NODE_ENV === 'development') {
+const debugLog = (data: any, nodeEnv: string): void => {
+  if (nodeEnv === 'development') {
     console.log(data);
   }
 };
