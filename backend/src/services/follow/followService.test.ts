@@ -47,7 +47,10 @@ describe('FollowService', () => {
 
     it('既存のフォロー関係がある場合はエラー結果を返す', async () => {
       const { repository, service } = createService();
-      vi.mocked(repository.isFollowing).mockResolvedValue(true);
+      vi.mocked(repository.isFollowing).mockResolvedValue(false);
+      vi.mocked(repository.createFollow).mockRejectedValue(
+        new Error('UNIQUE constraint failed: follows.follower_id, follows.followee_id')
+      );
 
       const result = await service.followUser('follower-1', 'followee-1');
 
@@ -57,13 +60,15 @@ describe('FollowService', () => {
         message: '既にフォローしています',
       });
       expect(repository.isFollowing).toHaveBeenCalledWith('follower-1', 'followee-1');
-      expect(repository.createFollow).not.toHaveBeenCalled();
+      expect(repository.createFollow).toHaveBeenCalledWith('follower-1', 'followee-1');
     });
 
     it('外部キー制約エラーをユーザー不在の結果へ変換する', async () => {
       const { repository, service } = createService();
       vi.mocked(repository.isFollowing).mockResolvedValue(false);
-      vi.mocked(repository.createFollow).mockRejectedValue({ code: 'ER_NO_REFERENCED_ROW_2' });
+      vi.mocked(repository.createFollow).mockRejectedValue(
+        new Error('FOREIGN KEY constraint failed')
+      );
 
       const result = await service.followUser('follower-1', 'missing-user');
 
@@ -95,6 +100,7 @@ describe('FollowService', () => {
     it('フォロー関係を削除して成功を返す', async () => {
       const { repository, service } = createService();
       vi.mocked(repository.isFollowing).mockResolvedValue(true);
+      vi.mocked(repository.deleteFollow).mockResolvedValue(1);
 
       const result = await service.unfollowUser('follower-1', 'followee-1');
 
@@ -105,7 +111,8 @@ describe('FollowService', () => {
 
     it('フォロー関係がない場合はエラー結果を返す', async () => {
       const { repository, service } = createService();
-      vi.mocked(repository.isFollowing).mockResolvedValue(false);
+      vi.mocked(repository.isFollowing).mockResolvedValue(true);
+      vi.mocked(repository.deleteFollow).mockResolvedValue(0);
 
       const result = await service.unfollowUser('follower-1', 'followee-1');
 
@@ -115,7 +122,7 @@ describe('FollowService', () => {
         message: 'フォロー関係が存在しません',
       });
       expect(repository.isFollowing).toHaveBeenCalledWith('follower-1', 'followee-1');
-      expect(repository.deleteFollow).not.toHaveBeenCalled();
+      expect(repository.deleteFollow).toHaveBeenCalledWith('follower-1', 'followee-1');
     });
 
     it('例外をデータベースエラー結果へ変換する', async () => {

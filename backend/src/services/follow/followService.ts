@@ -4,6 +4,9 @@ import type { IFollowRepository } from '../../repositories/follow/iFollowReposit
 
 // フォロー機能のサービス実装クラス
 
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : '';
+
 export class FollowService implements IFollowService {
   // リポジトリをコンストラクタで注入（依存性注入）
   constructor(private followRepository: IFollowRepository) {}
@@ -37,15 +40,19 @@ export class FollowService implements IFollowService {
       // フォロー関係を作成（FOREIGN KEY制約でユーザー存在チェックされる）
       await this.followRepository.createFollow(followerId, followeeId);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
+      const message = getErrorMessage(error);
 
-      // MySQL外部キー制約エラーの場合
-      if (
-        error.code === 'ER_NO_REFERENCED_ROW_2' ||
-        error.errno === 1452 ||
-        (error.message && error.message.includes('foreign key constraint fails'))
-      ) {
+      if (message.includes('UNIQUE constraint failed')) {
+        return {
+          success: false,
+          error: FollowError.ALREADY_FOLLOWING,
+          message: '既にフォローしています',
+        };
+      }
+
+      if (message.includes('FOREIGN KEY constraint failed')) {
         return {
           success: false,
           error: FollowError.USER_NOT_FOUND,
@@ -79,9 +86,16 @@ export class FollowService implements IFollowService {
       }
 
       // フォロー関係を削除
-      await this.followRepository.deleteFollow(followerId, followeeId);
+      const changes = await this.followRepository.deleteFollow(followerId, followeeId);
+      if (changes === 0) {
+        return {
+          success: false,
+          error: FollowError.NOT_FOLLOWING,
+          message: 'フォロー関係が存在しません',
+        };
+      }
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
 
       // その他のデータベースエラー

@@ -5,10 +5,39 @@ import {
   type GetFollowingUserRepoDto,
   type GetMutualFollowingUserRepoDto,
 } from './iProfileRepository.js';
-import db from '../../lib/db.js';
 import { TABLES } from '../../config/tables.js';
+import type { DbClient } from '../../lib/dbClient.js';
+
+type ProfileRow = Omit<
+  Profile,
+  | 'is_following'
+  | 'is_developer'
+  | 'total_miyabi'
+  | 'total_post'
+  | 'following_count'
+  | 'follower_count'
+> & {
+  is_following: number | boolean;
+  is_developer: number | boolean;
+  total_miyabi: number;
+  total_post: number;
+  following_count: number;
+  follower_count: number;
+};
+
+const rowToProfile = (row: ProfileRow): Profile => ({
+  ...row,
+  is_following: Boolean(row.is_following),
+  is_developer: Boolean(row.is_developer),
+  total_miyabi: Number(row.total_miyabi),
+  total_post: Number(row.total_post),
+  following_count: Number(row.following_count),
+  follower_count: Number(row.follower_count),
+});
 
 export class ProfileRepository implements IProfileRepository {
+  constructor(private readonly db: DbClient) {}
+
   /**
    * プロフィールを1つだけ取得する
    * @param user_id - ユーザーID
@@ -68,25 +97,8 @@ export class ProfileRepository implements IProfileRepository {
       if (!viewer_id) {
         delete params.viewer_id;
       }
-      const results = await db.query(sql, params);
-
-      const row = results[0];
-
-      const profile: Profile = {
-        user_id: row.user_id,
-        user_name: row.user_name,
-        profile_text: row.profile_text,
-        icon_url: row.icon_url,
-        created_at: row.created_at,
-        is_following: Boolean(row.is_following),
-        is_developer: Boolean(row.is_developer),
-        total_miyabi: Number(row.total_miyabi),
-        total_post: Number(row.total_post),
-        following_count: Number(row.following_count),
-        follower_count: Number(row.follower_count),
-      };
-
-      return profile;
+      const results = await this.db.query<ProfileRow>(sql, params);
+      return rowToProfile(results[0]);
     } catch (error) {
       console.error(`[ProfileRepository#getProfile] プロフィールの取得に失敗しました．`, error);
       throw new Error('データベースからのプロフィール取得処理に失敗しました．');
@@ -112,7 +124,7 @@ export class ProfileRepository implements IProfileRepository {
     `;
 
     try {
-      const result = await db.query(sql, {
+      await this.db.run(sql, {
         user_id,
         user_name,
         profile_text,
@@ -190,20 +202,8 @@ export class ProfileRepository implements IProfileRepository {
       if (!viewer_id) {
         delete params.viewer_id;
       }
-      const results = await db.query(sql, params);
-      return results.map((row: any) => ({
-        user_id: row.user_id,
-        user_name: row.user_name,
-        profile_text: row.profile_text,
-        icon_url: row.icon_url,
-        created_at: row.created_at,
-        is_following: Boolean(row.is_following),
-        is_developer: Boolean(row.is_developer),
-        total_miyabi: Number(row.total_miyabi),
-        total_post: Number(row.total_post),
-        following_count: Number(row.following_count),
-        follower_count: Number(row.follower_count),
-      }));
+      const results = await this.db.query<ProfileRow>(sql, params);
+      return results.map(rowToProfile);
     } catch (error) {
       console.error(
         `[ProfileRepository#getFollowingUser] フォローしているユーザーの取得に失敗しました．`,
@@ -285,20 +285,8 @@ export class ProfileRepository implements IProfileRepository {
       if (!viewer_id) {
         delete params.viewer_id;
       }
-      const results = await db.query(sql, params);
-      return results.map((row: any) => ({
-        user_id: row.user_id,
-        user_name: row.user_name,
-        profile_text: row.profile_text,
-        icon_url: row.icon_url,
-        created_at: row.created_at,
-        is_following: Boolean(row.is_following),
-        is_developer: Boolean(row.is_developer),
-        total_miyabi: Number(row.total_miyabi),
-        total_post: Number(row.total_post),
-        following_count: Number(row.following_count),
-        follower_count: Number(row.follower_count),
-      }));
+      const results = await this.db.query<ProfileRow>(sql, params);
+      return results.map(rowToProfile);
     } catch (error) {
       console.error(
         `[ProfileRepository#getMutualFollowingUser] 相互フォローしているユーザーの取得に失敗しました．`,

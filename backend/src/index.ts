@@ -1,7 +1,5 @@
-import 'dotenv/config';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { swaggerUI } from '@hono/swagger-ui';
-import { serve } from '@hono/node-server';
 import type { Context } from 'hono';
 import { env as getRuntimeEnv } from 'hono/adapter';
 import { cors } from 'hono/cors';
@@ -11,6 +9,7 @@ import {
   type AppEnv,
   type Container,
 } from './di/container.js';
+import { DbClient } from './lib/dbClient.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import router from './routes/route.js';
 
@@ -22,7 +21,7 @@ const app = new OpenAPIHono<AppEnv>();
 app.use('*', async (c, next) => {
   if (!cachedConfig || !cachedContainer) {
     cachedConfig = parseConfig(getRuntimeEnv<Record<string, unknown>>(c));
-    cachedContainer = createContainer(cachedConfig);
+    cachedContainer = createContainer(cachedConfig, new DbClient(c.env.DB));
   }
 
   c.set('config', cachedConfig);
@@ -60,12 +59,5 @@ routedApp.get(
 
 routedApp.onError(errorHandler);
 
-const port = Number(process.env.PORT) || 8080;
-console.log(`Server is running on http://localhost:${port}`);
-
-serve({
-  fetch: routedApp.fetch,
-  port,
-});
-
+export default app;
 export type AppType = typeof routedApp;

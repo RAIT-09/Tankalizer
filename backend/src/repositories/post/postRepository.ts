@@ -1,31 +1,38 @@
 import { type IPostRepository, type CreatePostRepoDTO, type Post } from './iPostRepository.js';
-import db from '../../lib/db.js';
 import { TABLES } from '../../config/tables.js';
 import type { GetPostRepoDTO } from '../../repositories/post/iPostRepository.js';
-import mysql from 'mysql2';
+import type { DbClient } from '../../lib/dbClient.js';
+import { generateUuid } from '../../utils/generateUuid.js';
+
+type PostRow = Omit<Post, 'tanka' | 'is_developer' | 'is_miyabi'> & {
+  tanka: string;
+  is_developer?: number | boolean;
+  is_miyabi?: number | boolean;
+};
+
+const rowToPost = (row: PostRow): Post => ({
+  ...row,
+  tanka: JSON.parse(row.tanka),
+  is_developer: Boolean(row.is_developer),
+  is_miyabi: Boolean(row.is_miyabi),
+});
 
 export class PostRepository implements IPostRepository {
+  constructor(private readonly db: DbClient) {}
+
   /**
    * 投稿IDをもとに投稿を1件検索する
    * @param id - ID (UUID形式)
    * @returns {Promise<Post | null>} 投稿が見つかった場合はPostオブジェクト，見つからなければnull
    */
-  async findById(id: string, dbc?: mysql.Connection): Promise<Post | null> {
+  async findById(id: string): Promise<Post | null> {
     const query = `
       SELECT * FROM ${TABLES.posts}
       WHERE id = :id AND is_deleted = FALSE
       LIMIT 1;
     `;
-    const option = { id };
-    let results;
-    if (dbc) {
-      // トランザクション中の場合
-      results = await db.queryOnConnection<Post | null>(dbc, query, option);
-    } else {
-      // 通常の場合
-      results = await db.query<Post | null>(query, option);
-    }
-    return results[0] || null;
+    const results = await this.db.query<PostRow>(query, { id });
+    return results[0] ? rowToPost(results[0]) : null;
   }
 
   /**
@@ -36,20 +43,21 @@ export class PostRepository implements IPostRepository {
   async create(postRepoDto: CreatePostRepoDTO): Promise<void> {
     const sql = `
       INSERT INTO ${TABLES.posts}
-        (original, tanka, image_path, user_id)
+        (id, original, tanka, image_path, user_id)
       VALUES
-        (:original, :tanka, :image_path, :user_id);
+        (:id, :original, :tanka, :image_path, :user_id);
     `;
 
     try {
       const values = {
+        id: generateUuid(),
         original: postRepoDto.original,
         tanka: JSON.stringify(postRepoDto.tanka),
-        image_path: postRepoDto.image_path,
+        image_path: postRepoDto.image_path ?? null,
         user_id: postRepoDto.user_id,
       };
 
-      await db.query(sql, values);
+      await this.db.run(sql, values);
       console.log(
         `[PostRepository#create] 投稿の作成に成功しました．(userId: ${postRepoDto.user_id})`
       );
@@ -75,7 +83,7 @@ export class PostRepository implements IPostRepository {
       WHERE id = :id AND user_id = :userId;
     `;
     try {
-      await db.query(sql, { id, userId });
+      await this.db.run(sql, { id, userId });
       console.log(`[PostRepository#delete] 投稿の削除に成功しました．(postId: ${id})`);
     } catch (error) {
       console.error(`[PostRepository#delete] 投稿の削除に失敗しました．(postId: ${id})`, error);
@@ -91,7 +99,7 @@ export class PostRepository implements IPostRepository {
   async getPost(dto: GetPostRepoDTO): Promise<Post[]> {
     const { limit, cursor, filterByUserId, viewerId } = dto;
 
-    const params: Record<string, any> = { limit };
+    const params: Record<string, unknown> = { limit };
     const whereClauses: string[] = ['posts.is_deleted = FALSE'];
 
     // WHERE句を動的に組み立てる
@@ -148,14 +156,9 @@ export class PostRepository implements IPostRepository {
     `;
 
     try {
-      const results = await db.query(sql, params);
+      const results = await this.db.query<PostRow>(sql, params);
 
-      // DBから取得した結果を，定義した型に合わせて整形
-      return results.map((row: any) => ({
-        ...row,
-        is_developer: Boolean(row.is_developer),
-        is_miyabi: Boolean(row.is_miyabi),
-      }));
+      return results.map(rowToPost);
     } catch (error) {
       console.error(`[PostRepository#getPosts] 投稿の取得に失敗しました．`, error);
       throw new Error('データベースからの投稿取得処理に失敗しました．');
@@ -169,7 +172,7 @@ export class PostRepository implements IPostRepository {
    * @returns {Promise<Post>} 投稿
    */
   async getOnePost(id: string, viewerId?: string): Promise<Post> {
-    const params: Record<string, any> = { id };
+    const params: Record<string, unknown> = { id };
     const whereClauses: string[] = ['posts.is_deleted = FALSE', `posts.id = :id`];
 
     // LEFT JOINを動的に組み立てる
@@ -209,14 +212,9 @@ export class PostRepository implements IPostRepository {
     `;
 
     try {
-      const results = await db.query(sql, params);
+      const results = await this.db.query<PostRow>(sql, params);
 
-      // DBから取得した結果を，定義した型に合わせて整形
-      const posts: Post[] = results.map((row: any) => ({
-        ...row,
-        is_developer: Boolean(row.is_developer),
-        is_miyabi: Boolean(row.is_miyabi),
-      }));
+      const posts = results.map(rowToPost);
 
       return posts[0];
     } catch (error) {
@@ -233,7 +231,7 @@ export class PostRepository implements IPostRepository {
    * @returns {Promise<Post[]>} 投稿の配列
    */
   async getFollowingPost(limit: number, viewerId: string, cursor?: string | null): Promise<Post[]> {
-    const params: Record<string, any> = { limit, viewerId };
+    const params: Record<string, unknown> = { limit, viewerId };
     const whereClauses: string[] = [
       'posts.is_deleted = FALSE',
       `follows.follower_id = :viewerId`, // 閲覧者がフォローしているユーザーに絞り込む
@@ -289,14 +287,9 @@ export class PostRepository implements IPostRepository {
     `;
 
     try {
-      const results = await db.query(sql, params);
+      const results = await this.db.query<PostRow>(sql, params);
 
-      // DBから取得した結果を，定義した型に合わせて整形
-      return results.map((row: any) => ({
-        ...row,
-        is_developer: Boolean(row.is_developer),
-        is_miyabi: Boolean(row.is_miyabi),
-      }));
+      return results.map(rowToPost);
     } catch (error) {
       console.error(`[PostRepository#getFollowingPosts] 投稿の取得に失敗しました．`, error);
       throw new Error('データベースからの投稿取得処理に失敗しました．');

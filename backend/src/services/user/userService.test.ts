@@ -32,7 +32,7 @@ const existingUser: User = {
   connect_info: 'new@example.com',
   profile_text: '既存の自己紹介',
   icon_url: 'icons/existing.png',
-  created_at: new Date('2025-01-01T00:00:00Z'),
+  created_at: '2025-01-01T00:00:00Z',
 };
 
 const createDependencies = () => {

@@ -1,5 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import type { AppConfig } from '../config/env.js';
+import type { DbClient } from '../lib/dbClient.js';
 import { FollowRepository } from '../repositories/follow/followRepository.js';
 import { MiyabiRepository } from '../repositories/miyabi/miyabiRepository.js';
 import { PostRepository } from '../repositories/post/postRepository.js';
@@ -22,6 +23,8 @@ import type { IStorageService } from '../services/storage/iStorageService.js';
 import type { IUserService } from '../services/user/iUserService.js';
 import { UserService } from '../services/user/userService.js';
 
+type Env = AppConfig & { DB: typeof DB };
+
 export type Container = {
   followService: IFollowService;
   iconService: IIconService;
@@ -34,18 +37,19 @@ export type Container = {
 };
 
 export type AppEnv = {
+  Bindings: Env;
   Variables: {
     container: Container;
     config: AppConfig;
   };
 };
 
-export const createContainer = (config: AppConfig): Container => {
-  const followRepository = new FollowRepository();
-  const miyabiRepository = new MiyabiRepository();
-  const postRepository = new PostRepository();
-  const profileRepository = new ProfileRepository();
-  const userRepository = new UserRepository();
+export const createContainer = (config: AppConfig, db: DbClient): Container => {
+  const followRepository = new FollowRepository(db);
+  const miyabiRepository = new MiyabiRepository(db);
+  const postRepository = new PostRepository(db);
+  const profileRepository = new ProfileRepository(db);
+  const userRepository = new UserRepository(db);
 
   const s3Client = new S3Client({
     region: 'ap-northeast-1',

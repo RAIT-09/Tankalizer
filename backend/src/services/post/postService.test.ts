@@ -25,7 +25,7 @@ const post: Post = {
   original: '春のニュース',
   tanka,
   image_path: null,
-  created_at: new Date('2025-01-01T00:00:00Z'),
+  created_at: '2025-01-01T00:00:00Z',
   user_id: 'user-1',
   user_name: 'ユーザー',
   user_icon: 'icons/user.png',
@@ -41,7 +41,7 @@ const user: User = {
   connect_info: 'viewer@example.com',
   profile_text: null,
   icon_url: 'icons/viewer.png',
-  created_at: new Date('2025-01-01T00:00:00Z'),
+  created_at: '2025-01-01T00:00:00Z',
 };
 
 const createDependencies = () => {

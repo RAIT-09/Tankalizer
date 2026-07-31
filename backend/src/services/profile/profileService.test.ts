@@ -20,7 +20,7 @@ const user: User = {
   connect_info: 'user@example.com',
   profile_text: '自己紹介',
   icon_url: 'icons/current.png',
-  created_at: new Date('2025-01-01T00:00:00Z'),
+  created_at: '2025-01-01T00:00:00Z',
 };
 
 const viewer: User = {
@@ -34,7 +34,7 @@ const profile: Profile = {
   user_name: 'ユーザー',
   profile_text: '自己紹介',
   icon_url: 'icons/current.png',
-  created_at: new Date('2025-01-01T00:00:00Z'),
+  created_at: '2025-01-01T00:00:00Z',
   is_developer: false,
   total_miyabi: 12,
   total_post: 3,

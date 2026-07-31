@@ -1,30 +1,34 @@
 import { type IMiyabiRepository, type Miyabi, type RankedPost } from './iMiyabiRepository.js';
-import db from '../../lib/db.js';
 import { TABLES } from '../../config/tables.js';
-import mysql from 'mysql2';
+import type { DbClient } from '../../lib/dbClient.js';
+import { generateUuid } from '../../utils/generateUuid.js';
+
+type RankedPostRow = Omit<
+  RankedPost,
+  'rank' | 'tanka' | 'is_developer' | 'is_miyabi' | 'miyabi_count'
+> & {
+  tanka: string;
+  is_developer: number | boolean;
+  is_miyabi: number | boolean;
+  miyabi_count: number;
+};
 
 export class MiyabiRepository implements IMiyabiRepository {
+  constructor(private readonly db: DbClient) {}
+
   /**
    * ユーザーが特定の投稿に雅したか確認する
    * @param userId - ユーザーID
    * @param postId - 投稿ID
    * @returns {Promise<Miyabi | null>}
    */
-  async findMiyabi(userId: string, postId: string, dbc?: mysql.Connection): Promise<Miyabi | null> {
+  async findMiyabi(userId: string, postId: string): Promise<Miyabi | null> {
     const query = `
     SELECT * FROM ${TABLES.miyabis}
     WHERE user_id = :user_id AND post_id = :post_id
     LIMIT 1;
   `;
-    const option = { user_id: userId, post_id: postId };
-    let results;
-    if (dbc) {
-      // トランザクション中の場合
-      results = await db.queryOnConnection(dbc, query, option);
-    } else {
-      // 通常の場合
-      results = await db.query(query, option);
-    }
+    const results = await this.db.query<Miyabi>(query, { user_id: userId, post_id: postId });
 
     return results[0] || null;
   }
@@ -35,21 +39,15 @@ export class MiyabiRepository implements IMiyabiRepository {
    * @param postId - 投稿ID
    * @returns {Promise<void>}
    */
-  async create(userId: string, postId: string, dbc?: mysql.Connection): Promise<void> {
+  async create(userId: string, postId: string): Promise<void> {
     const query = `
       INSERT INTO ${TABLES.miyabis}
-      (user_id, post_id)
-      VALUES (:userId, :postId);
+      (id, user_id, post_id)
+      VALUES (:id, :userId, :postId);
     `;
-    const option = { userId, postId };
+    const option = { id: generateUuid(), userId, postId };
     try {
-      if (dbc) {
-        // トランザクション中の場合
-        await db.queryOnConnection(dbc, query, option);
-      } else {
-        // 通常の場合
-        await db.query(query, option);
-      }
+      await this.db.run(query, option);
       console.log(
         `[MiyabiRepository#create] 雅の作成に成功しました．(userId: ${userId}, postId: ${postId})`
       );
@@ -66,22 +64,17 @@ export class MiyabiRepository implements IMiyabiRepository {
    * 雅を削除する
    * @param userId - ユーザーID
    * @param postId - 投稿ID
-   * @returns {Promise<void>}
+   * @returns {Promise<number>}
    */
-  async delete(userId: string, postId: string, dbc?: mysql.Connection): Promise<void> {
+  async delete(userId: string, postId: string): Promise<number> {
     const query = `DELETE FROM ${TABLES.miyabis} WHERE user_id = :userId AND post_id = :postId;`;
     const option = { userId, postId };
     try {
-      if (dbc) {
-        // トランザクション中の場合
-        await db.queryOnConnection(dbc, query, option);
-      } else {
-        // 通常の場合
-        await db.query(query, option);
-      }
+      const { changes } = await this.db.run(query, option);
       console.log(
         `[MiyabiRepository#delete] 雅の削除に成功しました．(userId: ${userId}, postId: ${postId})`
       );
+      return changes;
     } catch (error) {
       console.error(
         `[MiyabiRepository#delete] 雅の削除に失敗しました．(userId: ${userId}, postId: ${postId})`,
@@ -98,7 +91,7 @@ export class MiyabiRepository implements IMiyabiRepository {
    * @returns {Promise<PostWithRank[]>}
    */
   async getMiyabiRanking(limit: number, viewerId?: string): Promise<RankedPost[]> {
-    const params: { [key: string]: any } = { limit };
+    const params: Record<string, unknown> = { limit };
 
     // viewerId が指定されている場合，閲覧者が雅済みかチェックする句を動的に生成
     let isMiyabiClause: string;
@@ -133,7 +126,7 @@ export class MiyabiRepository implements IMiyabiRepository {
         ${TABLES.miyabis} AS m ON p.id = m.post_id
       WHERE
         -- 直近7日間の投稿に絞る
-        p.created_at >= (NOW() - INTERVAL 7 DAY)
+        p.created_at >= strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-7 days')
         AND p.is_deleted = FALSE
       GROUP BY
         p.id, u.id
@@ -143,11 +136,12 @@ export class MiyabiRepository implements IMiyabiRepository {
     `;
 
     try {
-      const results = await db.query(sql, params);
+      const results = await this.db.query<RankedPostRow>(sql, params);
 
       // 整形
-      const rankedPosts: RankedPost[] = results.map((row: any, index: number) => ({
+      const rankedPosts: RankedPost[] = results.map((row, index) => ({
         ...row,
+        tanka: JSON.parse(row.tanka),
         rank: index + 1,
         is_developer: Boolean(row.is_developer),
         is_miyabi: Boolean(row.is_miyabi),

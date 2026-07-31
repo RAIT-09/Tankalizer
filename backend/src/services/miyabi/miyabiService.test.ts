@@ -5,28 +5,12 @@ import type { IUserRepository, User } from '../../repositories/user/iUserReposit
 import { ConflictError, NotFoundError } from './iMiyabiService.js';
 import { MiyabiService } from './miyabiService.js';
 
-const { dbc, transactionMock } = vi.hoisted(() => {
-  const connection = { id: 'transaction-connection' };
-  return {
-    dbc: connection,
-    transactionMock: vi.fn(async (callback: (value: typeof connection) => Promise<unknown>) =>
-      callback(connection)
-    ),
-  };
-});
-
-vi.mock('../../lib/db.js', () => ({
-  default: {
-    transaction: transactionMock,
-  },
-}));
-
 const post: Post = {
   id: 'post-1',
   original: '原文',
   tanka: ['一', '二', '三', '四', '五'],
   image_path: null,
-  created_at: new Date('2025-01-01T00:00:00Z'),
+  created_at: '2025-01-01T00:00:00Z',
   user_id: 'author-1',
   user_name: '作者',
   user_icon: 'icons/author.png',
@@ -42,14 +26,14 @@ const user: User = {
   connect_info: 'user@example.com',
   profile_text: null,
   icon_url: 'icons/user.png',
-  created_at: new Date('2025-01-01T00:00:00Z'),
+  created_at: '2025-01-01T00:00:00Z',
 };
 
 const miyabi: Miyabi = {
   id: 'miyabi-1',
   user_id: 'user-1',
   post_id: 'post-1',
-  created_at: new Date('2025-01-02T00:00:00Z'),
+  created_at: '2025-01-02T00:00:00Z',
 };
 
 const createDependencies = () => {
@@ -89,7 +73,7 @@ describe('MiyabiService', () => {
   });
 
   describe('createMiyabi', () => {
-    it('トランザクション内で雅を作成して結果を返す', async () => {
+    it('雅を作成して結果を返す', async () => {
       const { service, miyabiRepository, postRepository, userRepository } = createDependencies();
       vi.mocked(postRepository.findById).mockResolvedValue(post);
       vi.mocked(userRepository.findById).mockResolvedValue(user);
@@ -98,11 +82,10 @@ describe('MiyabiService', () => {
       const result = await service.createMiyabi({ user_id: 'user-1', post_id: 'post-1' });
 
       expect(result).toEqual({ message: '雅を作成しました．' });
-      expect(transactionMock).toHaveBeenCalledOnce();
-      expect(postRepository.findById).toHaveBeenCalledWith('post-1', dbc);
-      expect(userRepository.findById).toHaveBeenCalledWith('user-1', dbc);
-      expect(miyabiRepository.findMiyabi).toHaveBeenCalledWith('user-1', 'post-1', dbc);
-      expect(miyabiRepository.create).toHaveBeenCalledWith('user-1', 'post-1', dbc);
+      expect(postRepository.findById).toHaveBeenCalledWith('post-1');
+      expect(userRepository.findById).toHaveBeenCalledWith('user-1');
+      expect(miyabiRepository.findMiyabi).toHaveBeenCalledWith('user-1', 'post-1');
+      expect(miyabiRepository.create).toHaveBeenCalledWith('user-1', 'post-1');
     });
 
     it('投稿が存在しない場合はNotFoundErrorを投げる', async () => {
@@ -115,7 +98,7 @@ describe('MiyabiService', () => {
 
       expect(error).toBeInstanceOf(NotFoundError);
       expect(error).toMatchObject({ name: 'NotFoundError', message: '投稿が見つかりません．' });
-      expect(postRepository.findById).toHaveBeenCalledWith('post-1', dbc);
+      expect(postRepository.findById).toHaveBeenCalledWith('post-1');
       expect(userRepository.findById).not.toHaveBeenCalled();
       expect(miyabiRepository.create).not.toHaveBeenCalled();
     });
@@ -131,8 +114,8 @@ describe('MiyabiService', () => {
 
       expect(error).toBeInstanceOf(NotFoundError);
       expect(error).toMatchObject({ name: 'NotFoundError', message: 'ユーザーが見つかりません．' });
-      expect(postRepository.findById).toHaveBeenCalledWith('post-1', dbc);
-      expect(userRepository.findById).toHaveBeenCalledWith('user-1', dbc);
+      expect(postRepository.findById).toHaveBeenCalledWith('post-1');
+      expect(userRepository.findById).toHaveBeenCalledWith('user-1');
       expect(miyabiRepository.findMiyabi).not.toHaveBeenCalled();
       expect(miyabiRepository.create).not.toHaveBeenCalled();
     });
@@ -141,7 +124,10 @@ describe('MiyabiService', () => {
       const { service, miyabiRepository, postRepository, userRepository } = createDependencies();
       vi.mocked(postRepository.findById).mockResolvedValue(post);
       vi.mocked(userRepository.findById).mockResolvedValue(user);
-      vi.mocked(miyabiRepository.findMiyabi).mockResolvedValue(miyabi);
+      vi.mocked(miyabiRepository.findMiyabi).mockResolvedValue(null);
+      vi.mocked(miyabiRepository.create).mockRejectedValue(
+        new Error('UNIQUE constraint failed: miyabis.user_id, miyabis.post_id')
+      );
 
       const error = await service
         .createMiyabi({ user_id: 'user-1', post_id: 'post-1' })
@@ -149,32 +135,34 @@ describe('MiyabiService', () => {
 
       expect(error).toBeInstanceOf(ConflictError);
       expect(error).toMatchObject({ name: 'ConflictError', message: '雅が既に存在します．' });
-      expect(miyabiRepository.findMiyabi).toHaveBeenCalledWith('user-1', 'post-1', dbc);
-      expect(miyabiRepository.create).not.toHaveBeenCalled();
+      expect(miyabiRepository.findMiyabi).toHaveBeenCalledWith('user-1', 'post-1');
+      expect(miyabiRepository.create).toHaveBeenCalledWith('user-1', 'post-1');
     });
   });
 
   describe('deleteMiyabi', () => {
-    it('トランザクション内で雅を削除して結果を返す', async () => {
+    it('雅を削除して結果を返す', async () => {
       const { service, miyabiRepository, postRepository, userRepository } = createDependencies();
       vi.mocked(miyabiRepository.findMiyabi).mockResolvedValue(miyabi);
       vi.mocked(postRepository.findById).mockResolvedValue(post);
       vi.mocked(userRepository.findById).mockResolvedValue(user);
+      vi.mocked(miyabiRepository.delete).mockResolvedValue(1);
 
       const result = await service.deleteMiyabi({ user_id: 'user-1', post_id: 'post-1' });
 
       expect(result).toEqual({ message: '雅を削除しました．' });
-      expect(miyabiRepository.findMiyabi).toHaveBeenCalledWith('user-1', 'post-1', dbc);
-      expect(postRepository.findById).toHaveBeenCalledWith('post-1', dbc);
-      expect(userRepository.findById).toHaveBeenCalledWith('user-1', dbc);
-      expect(miyabiRepository.delete).toHaveBeenCalledWith('user-1', 'post-1', dbc);
+      expect(miyabiRepository.findMiyabi).toHaveBeenCalledWith('user-1', 'post-1');
+      expect(postRepository.findById).toHaveBeenCalledWith('post-1');
+      expect(userRepository.findById).toHaveBeenCalledWith('user-1');
+      expect(miyabiRepository.delete).toHaveBeenCalledWith('user-1', 'post-1');
     });
 
     it('雅が存在しない場合は投稿とユーザーを確認した後にConflictErrorを投げる', async () => {
       const { service, miyabiRepository, postRepository, userRepository } = createDependencies();
-      vi.mocked(miyabiRepository.findMiyabi).mockResolvedValue(null);
+      vi.mocked(miyabiRepository.findMiyabi).mockResolvedValue(miyabi);
       vi.mocked(postRepository.findById).mockResolvedValue(post);
       vi.mocked(userRepository.findById).mockResolvedValue(user);
+      vi.mocked(miyabiRepository.delete).mockResolvedValue(0);
 
       const error = await service
         .deleteMiyabi({ user_id: 'user-1', post_id: 'post-1' })
@@ -182,10 +170,10 @@ describe('MiyabiService', () => {
 
       expect(error).toBeInstanceOf(ConflictError);
       expect(error).toMatchObject({ name: 'ConflictError', message: '雅が見つかりません．' });
-      expect(miyabiRepository.findMiyabi).toHaveBeenCalledWith('user-1', 'post-1', dbc);
-      expect(postRepository.findById).toHaveBeenCalledWith('post-1', dbc);
-      expect(userRepository.findById).toHaveBeenCalledWith('user-1', dbc);
-      expect(miyabiRepository.delete).not.toHaveBeenCalled();
+      expect(miyabiRepository.findMiyabi).toHaveBeenCalledWith('user-1', 'post-1');
+      expect(postRepository.findById).toHaveBeenCalledWith('post-1');
+      expect(userRepository.findById).toHaveBeenCalledWith('user-1');
+      expect(miyabiRepository.delete).toHaveBeenCalledWith('user-1', 'post-1');
     });
   });
 
