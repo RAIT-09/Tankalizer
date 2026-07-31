@@ -209,7 +209,7 @@ export class PostRepository implements IPostRepository {
     `;
 
     try {
-      const results = await db.query(sql, { id, viewerId });
+      const results = await db.query(sql, params);
 
       // DBから取得した結果を，定義した型に合わせて整形
       const posts: Post[] = results.map((row: any) => ({
