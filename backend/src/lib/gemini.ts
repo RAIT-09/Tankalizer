@@ -1,7 +1,5 @@
 import { GoogleGenAI, Type, ApiError, ThinkingLevel } from '@google/genai';
-import { readFile } from 'fs/promises';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import systemInstruction from './prompt.txt';
 
 const printLine = (): void => {
   console.log('--------------------------------');
@@ -22,12 +20,6 @@ const generateTanka = async (
     if (!apiKey) {
       throw new Error('API キーが設定されていません。');
     }
-
-    // prompt.txtを読み込む
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const promptPath = join(__dirname, 'prompt.txt');
-    const systemInstruction = await readFile(promptPath, 'utf-8');
 
     const ai = new GoogleGenAI({ apiKey });
 
