@@ -10,7 +10,7 @@ export const getFollowingUserSchema = z.object({
     example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
     description: '閲覧者のユーザーid',
   }),
-  limit: z.number().optional().default(10).openapi({
+  limit: z.number().int().min(1).max(100).optional().default(10).openapi({
     example: 10,
     description: '取得するユーザーの数',
   }),

@@ -2,7 +2,7 @@ import { z } from '@hono/zod-openapi';
 
 // リクエストの型
 export const getPostSchema = z.object({
-  limit: z.number().optional().default(10).openapi({
+  limit: z.number().int().min(1).max(100).optional().default(10).openapi({
     example: 10,
     description: '取得する投稿の数',
   }),
