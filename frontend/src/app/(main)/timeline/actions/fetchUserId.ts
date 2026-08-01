@@ -1,7 +1,7 @@
 // サーバアクション
 'use server';
 
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
+import { backendFetch } from '@/lib/backendFetch';
 
 /**
  * iconUrlからuserIdを取得する非同期関数
@@ -13,7 +13,7 @@ const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
  */
 const fetchUserId = async ({ iconUrl }: { iconUrl: string }): Promise<string> => {
   try {
-    const res = await fetch(`${backendUrl}/convert`, {
+    const res = await backendFetch('/v2/convert', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

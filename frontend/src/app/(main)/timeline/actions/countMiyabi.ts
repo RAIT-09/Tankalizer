@@ -1,7 +1,7 @@
 // サーバアクション
 'use server';
 
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
+import { backendFetch } from '@/lib/backendFetch';
 
 /**
  * 雅を増やす非同期関数
@@ -13,7 +13,7 @@ const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
  */
 export const addMiyabi = async ({ userId, postId }: { userId: string; postId: string }) => {
   try {
-    const res = await fetch(`${backendUrl}/miyabi`, {
+    const res = await backendFetch('/v2/miyabi', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,7 +43,7 @@ export const addMiyabi = async ({ userId, postId }: { userId: string; postId: st
  */
 export const removeMiyabi = async ({ userId, postId }: { userId: string; postId: string }) => {
   try {
-    const res = await fetch(`${backendUrl}/miyabi`, {
+    const res = await backendFetch('/v2/miyabi', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

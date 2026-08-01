@@ -2,6 +2,7 @@ import NextAuth from 'next-auth';
 import GitHub from 'next-auth/providers/github';
 import Google from 'next-auth/providers/google';
 import type { Provider } from 'next-auth/providers';
+import { backendFetch } from '@/lib/backendFetch';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
@@ -50,7 +51,6 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   },
   callbacks: {
     jwt: async ({ token, user, trigger, account }) => {
-      // console.log(process.env.BACKEND_URL);
       if (trigger === 'signIn' && user && account) {
         try {
           const formData = new FormData();
@@ -67,7 +67,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
           formData.append('icon_url', user.image || `${baseUrl}/iconDefault.png`);
 
-          const res = await fetch(`${process.env.BACKEND_URL}/user`, {
+          const res = await backendFetch('/v2/user', {
             method: 'POST',
             body: formData,
           });

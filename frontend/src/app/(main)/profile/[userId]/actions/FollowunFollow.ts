@@ -1,12 +1,11 @@
 'use server';
 
+import { backendFetch } from '@/lib/backendFetch';
 import { FollowRequest } from '@/types/followunfollowTypes';
-
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
 export const follow = async (data: FollowRequest) => {
   try {
-    const res = await fetch(`${backendUrl}/follow`, {
+    const res = await backendFetch('/v2/follow', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -28,7 +27,7 @@ export const follow = async (data: FollowRequest) => {
 
 export const unfollow = async (data: FollowRequest) => {
   try {
-    const res = await fetch(`${backendUrl}/unfollow`, {
+    const res = await backendFetch('/v2/unfollow', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
