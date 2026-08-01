@@ -30,6 +30,7 @@ export const providerMap = providers
   .filter((provider) => provider.id !== 'credentials');
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
+  trustHost: true,
   providers,
   cookies: {
     pkceCodeVerifier: {

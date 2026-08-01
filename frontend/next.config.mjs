@@ -7,7 +7,12 @@ const cdnDomain = process.env.NEXT_PUBLIC_CDN_URL
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['avatars.githubusercontent.com', cdnDomain, 'lh3.googleusercontent.com'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: cdnDomain },
+    ],
+    unoptimized: true,
   },
   experimental: {
     serverActions: {
@@ -17,3 +22,5 @@ const nextConfig = {
 };
 
 export default nextConfig;
+
+import('@opennextjs/cloudflare').then((m) => m.initOpenNextCloudflareForDev());
