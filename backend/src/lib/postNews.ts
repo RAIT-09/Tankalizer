@@ -63,6 +63,17 @@ export const runNewsPost = async (container: Container, config: AppConfig) => {
   }
 };
 
+export const runScheduledNewsPost = async (
+  container: Container,
+  config: AppConfig
+) => {
+  const result = await runNewsPost(container, config);
+
+  if (!result.isSuccess) {
+    throw new Error(result.tanka.line0);
+  }
+};
+
 const postNews = async (requestApiKey: string, container: Container, config: AppConfig) => {
   if (requestApiKey !== config.NEWS_POST_API_KEY) {
     return {

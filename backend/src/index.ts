@@ -10,7 +10,7 @@ import {
   type Container,
 } from './di/container.js';
 import { DbClient } from './lib/dbClient.js';
-import { runNewsPost } from './lib/postNews.js';
+import { runScheduledNewsPost } from './lib/postNews.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import router from './routes/route.js';
 
@@ -68,7 +68,7 @@ const scheduled = (
   const config = parseConfig(env);
   const container = createContainer(config, new DbClient(env.DB));
 
-  ctx.waitUntil(runNewsPost(container, config));
+  ctx.waitUntil(runScheduledNewsPost(container, config));
 };
 
 export default { fetch: app.fetch, scheduled };

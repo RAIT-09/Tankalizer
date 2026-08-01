@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppConfig } from '../config/env.js';
 import type { Container } from '../di/container.js';
-import postNews from './postNews.js';
+import postNews, { runScheduledNewsPost } from './postNews.js';
 
 const { getNewsMock } = vi.hoisted(() => ({
   getNewsMock: vi.fn(),
@@ -117,5 +117,31 @@ describe('postNews', () => {
       image: null,
       user_id: 'news-user',
     });
+  });
+
+  it('cron実行でニュース取得に失敗した場合は理由を含むErrorをthrowする', async () => {
+    const { container } = createContainer();
+    getNewsMock.mockResolvedValue({ isSuccess: false, message: 'RSS unavailable' });
+
+    await expect(runScheduledNewsPost(container, config)).rejects.toThrow(
+      'ニュースの取得に失敗しました'
+    );
+  });
+
+  it('cron実行で投稿に失敗した場合は理由を含むErrorをthrowする', async () => {
+    const { container, createPost } = createContainer();
+    getNewsMock.mockResolvedValue({
+      isSuccess: true,
+      news: {
+        title: 'ニュースタイトル',
+        description: 'ニュース本文',
+        url: 'https://news.example.com/article',
+      },
+    });
+    createPost.mockRejectedValue(new Error('database unavailable'));
+
+    await expect(runScheduledNewsPost(container, config)).rejects.toThrow(
+      '投稿に失敗しました'
+    );
   });
 });
