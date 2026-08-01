@@ -1,12 +1,13 @@
 # Usage:
 #   pip install mysql-connector-python
 #   RDB_HOST=... RDB_USER=... RDB_PASSWORD=... RDB_NAME=... python3 migrateDB/export_to_d1.py
-#   for f in migrateDB/d1_export/[0-9][0-9]_*.sql; do npx wrangler d1 execute tankalizer --remote --config backend/wrangler.jsonc --file="$f"; done
+#   for f in migrateDB/d1_export/[0-9][0-9]_*.sql; do npx wrangler d1 execute tankalizer --remote --config backend/wrangler.jsonc --file="$f" || { echo "FAILED: $f"; break; }; done
 #   npx wrangler d1 execute tankalizer --remote --config backend/wrangler.jsonc --file=migrateDB/d1_export/verify.sql
 
 import math
 import os
 import re
+import sys
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -92,6 +93,18 @@ TABLES = (
     ),
 )
 
+NOT_NULL_DATETIME_COLUMNS = (
+    ("users", "created_at"),
+    ("posts", "created_at"),
+    ("miyabis", "created_at"),
+    ("developers", "developer_since"),
+    ("follows", "followed_at"),
+)
+
+
+class NullDatetimeError(RuntimeError):
+    pass
+
 
 def sqlite_literal(value: Any) -> str:
     if value is None:
@@ -158,8 +171,16 @@ def write_table_files(
     return row_count
 
 
-def verify_sql(tables: Sequence[TableExport]) -> str:
-    statements = [f"SELECT COUNT(*) FROM {table.name};" for table in tables]
+def verify_sql(tables: Sequence[TableExport], expected_counts: dict[str, int]) -> str:
+    comparisons = []
+    for table in tables:
+        expected = expected_counts[table.name]
+        comparisons.append(
+            f"SELECT '{table.name}' AS table_name, {expected} AS expected, "
+            f"COUNT(*) AS actual, CASE WHEN COUNT(*) = {expected} "
+            f"THEN 0 ELSE 1 END AS mismatch FROM {table.name}"
+        )
+    statements = ["\nUNION ALL\n".join(comparisons) + ";"]
     statements.append("SELECT COUNT(*) FROM posts WHERE json_valid(tanka) = 0;")
     return "\n".join(statements) + "\n"
 
@@ -190,19 +211,43 @@ def connect_mysql(settings: dict[str, Any]) -> Any:
 
 
 def clean_generated_files(output_dir: Path) -> None:
-    generated_name = re.compile(r"0[1-5]_[a-z]+(?:_\d{3})?\.sql")
+    generated_name = re.compile(r"0[1-5]_[a-z]+(?:_\d{3,})?\.sql")
     for path in output_dir.glob("*.sql"):
         if path.name == "verify.sql" or generated_name.fullmatch(path.name):
             path.unlink()
 
 
+def check_not_null_datetimes(cursor: Any) -> None:
+    violations = []
+    for table, column in NOT_NULL_DATETIME_COLUMNS:
+        cursor.execute(f"SELECT COUNT(*) FROM {table} WHERE {column} IS NULL")
+        count = int(cursor.fetchone()[0])
+        if count:
+            violations.append((table, column, count))
+    if violations:
+        details = ", ".join(
+            f"{table}.{column}={count}" for table, column, count in violations
+        )
+        raise NullDatetimeError(f"NOT NULL 日時列に NULL があります: {details}")
+
+
+def source_counts(cursor: Any) -> dict[str, int]:
+    counts = {}
+    for table in TABLES:
+        cursor.execute(f"SELECT COUNT(*) FROM {table.name}")
+        counts[table.name] = int(cursor.fetchone()[0])
+    return counts
+
+
 def export_database(connection: Any, output_dir: Path) -> dict[str, int]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    clean_generated_files(output_dir)
     counts: dict[str, int] = {}
     cursor = connection.cursor()
     try:
         cursor.execute("SET time_zone = '+00:00'")
+        check_not_null_datetimes(cursor)
+        expected_counts = source_counts(cursor)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        clean_generated_files(output_dir)
         for table in TABLES:
             cursor.execute(table.select_sql)
             rows = iter(lambda: cursor.fetchmany(ROWS_PER_FILE), [])
@@ -213,7 +258,9 @@ def export_database(connection: Any, output_dir: Path) -> dict[str, int]:
             )
     finally:
         cursor.close()
-    (output_dir / "verify.sql").write_text(verify_sql(TABLES), encoding="utf-8")
+    (output_dir / "verify.sql").write_text(
+        verify_sql(TABLES, expected_counts), encoding="utf-8"
+    )
     return counts
 
 
@@ -221,7 +268,11 @@ def main() -> None:
     settings = connection_settings(dict(os.environ))
     connection = connect_mysql(settings)
     try:
-        counts = export_database(connection, OUTPUT_DIR)
+        try:
+            counts = export_database(connection, OUTPUT_DIR)
+        except NullDatetimeError as error:
+            print(error, file=sys.stderr)
+            raise SystemExit(1) from error
     finally:
         connection.close()
 
