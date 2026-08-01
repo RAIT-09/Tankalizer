@@ -9,25 +9,23 @@
       "binding": "DB",
       "database_name": "tankalizer",
       // デプロイ前に `wrangler d1 create tankalizer` で発行された ID に差し替える（ローカル開発はこのままで動く）
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "64267243-4327-4d66-a69f-487cca7fedef",
       "migrations_dir": "migrations"
     }
   ],
-  // 旧 infra/lambda（EventBridge）のニュース自動投稿に相当。頻度は運用に合わせて調整
+  // 旧 infra/lambda（EventBridge）のニュース自動投稿に相当。カットオーバーまで一時停止中（再開時は ["0 */6 * * *"] 等に戻す）
   "triggers": {
-    "crons": ["0 */6 * * *"]
+    "crons": []
   },
   "vars": {
     "NODE_ENV": "production",
     "FRONTEND_URL": "https://tankalizer.jp",
-    "S3_BUCKET_NAME": "tankalizer-images",
-    "CDN_URL": "image.tankalizer.jp",
-    "NEWS_USER_ID": "REPLACE_ME",
-    "OUR_ID": "REPLACE_ME",
-    "DEFAULT_ICON_PATH": "REPLACE_ME"
+    "S3_BUCKET_NAME": "202502-test-bucket",
+    "CDN_URL": "image.tankalizer.jp"
   },
   // secrets（wrangler secret put で登録、ローカルは .dev.vars）:
   //   GEMINI_API_KEY / NEWS_POST_API_KEY / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY
+  //   NEWS_USER_ID / OUR_ID / DEFAULT_ICON_PATH（user_id 無検証の間は ID 類も非公開にする）
   "rules": [{ "type": "Text", "globs": ["**/*.txt"] }],
   "observability": { "enabled": true }
 }

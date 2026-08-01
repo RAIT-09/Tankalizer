@@ -9,5 +9,9 @@
   },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "AUTH_URL": "https://tankalizer.jp",
+    "BACKEND_URL": "https://api.tankalizer.jp/v2"
   }
 }
