@@ -1,118 +1,101 @@
-import sharp from 'sharp';
+import { PhotonImage, SamplingFilter, crop, resize } from '@cf-wasm/photon';
+
+import { BadRequestError } from './errors.js';
 
 interface CompressionOptions {
   targetFileSize: number;
-  width?: number;
-  height?: number;
-  logPrefix: string;
-  cropToSquare?: boolean;
+  width: number;
+  height: number;
+  cropToSquare: boolean;
 }
 
-const fileToBuffer = async (file: File): Promise<Buffer> => {
-  const arrayBuffer = await file.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+const QUALITY_LEVELS = [80, 55, 30] as const;
+const MAX_INPUT_FILE_SIZE = 10 * 1024 * 1024;
+
+const validateInputFileSize = (file: File): void => {
+  if (file.size > MAX_INPUT_FILE_SIZE) {
+    throw new BadRequestError('画像ファイルのサイズは10MB以下にしてください．');
+  }
 };
 
 const isImageFile = (file: File): boolean => {
   return file.type.startsWith('image/');
 };
 
-const findOptimalQuality = async (
-  sharpInstance: sharp.Sharp,
-  targetFileSize: number
-): Promise<Buffer | null> => {
-  let minQuality = 1;
-  let maxQuality = 100;
-  let bestBuffer: Buffer | null = null;
-
-  // 二分探索で最適な品質を探す
-  while (minQuality <= maxQuality) {
-    const midQuality = Math.floor((minQuality + maxQuality) / 2);
-    const compressedBuffer = await sharpInstance.jpeg({ quality: midQuality }).toBuffer();
-
-    if (compressedBuffer.length <= targetFileSize) {
-      bestBuffer = compressedBuffer;
-      minQuality = midQuality + 1;
-    } else {
-      maxQuality = midQuality - 1;
-    }
-  }
-
-  return bestBuffer;
+const bytesToFile = (bytes: Uint8Array, originalFile: File): File => {
+  const arrayBuffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(arrayBuffer).set(bytes);
+  return new File([arrayBuffer], originalFile.name, { type: 'image/jpeg' });
 };
 
-const bufferToFile = (buffer: Buffer, originalFile: File): File => {
-  return new File([buffer], originalFile.name, { type: 'image/jpeg' });
-};
-
-/**
- * 画像を指定されたファイルサイズ以下になるように圧縮する
- * @param file - 圧縮したい画像file
- * @param options - 圧縮オプション
- * @returns {Promise<File>} 圧縮後の画像file
- */
 const compressImageWithOptions = async (file: File, options: CompressionOptions): Promise<File> => {
-  const { targetFileSize, width, height, logPrefix, cropToSquare } = options;
   if (!isImageFile(file)) {
     throw new Error('ファイルが画像ではありません');
   }
 
-  const buffer = await fileToBuffer(file);
+  const images: PhotonImage[] = [];
 
-  const sharpInstance = sharp(buffer).rotate();
+  try {
+    const sourceImage = PhotonImage.new_from_byteslice(
+      new Uint8Array(await file.arrayBuffer())
+    );
+    images.push(sourceImage);
 
-  // cropToSquareフラグがtrueの場合，正方形にクロップする処理
-  if (width && height) {
-    sharpInstance.resize(width, height, {
-      fit: cropToSquare ? 'cover' : 'inside', // trueならクロップ，falseなら通常のリサイズ
-      position: 'center',
-    });
+    let preparedImage = sourceImage;
+    if (options.cropToSquare) {
+      const cropSize = Math.min(sourceImage.get_width(), sourceImage.get_height());
+      const x = Math.floor((sourceImage.get_width() - cropSize) / 2);
+      const y = Math.floor((sourceImage.get_height() - cropSize) / 2);
+      preparedImage = crop(sourceImage, x, y, x + cropSize, y + cropSize);
+      images.push(preparedImage);
+    }
+
+    const scale = Math.min(
+      options.width / preparedImage.get_width(),
+      options.height / preparedImage.get_height()
+    );
+    const resizedImage = resize(
+      preparedImage,
+      Math.max(1, Math.round(preparedImage.get_width() * scale)),
+      Math.max(1, Math.round(preparedImage.get_height() * scale)),
+      SamplingFilter.Lanczos3
+    );
+    images.push(resizedImage);
+
+    let compressedBytes = resizedImage.get_bytes_jpeg(QUALITY_LEVELS[0]);
+    for (const quality of QUALITY_LEVELS.slice(1)) {
+      if (compressedBytes.byteLength <= options.targetFileSize) {
+        break;
+      }
+      compressedBytes = resizedImage.get_bytes_jpeg(quality);
+    }
+
+    return bytesToFile(compressedBytes, file);
+  } finally {
+    for (let index = images.length - 1; index >= 0; index--) {
+      images[index].free();
+    }
   }
-
-  const initialBuffer = await sharpInstance.jpeg().toBuffer();
-  if (initialBuffer.length <= targetFileSize) {
-    console.log(`[${logPrefix}] 高品質のまま圧縮完了．`);
-    return bufferToFile(initialBuffer, file);
-  }
-
-  console.log(`[${logPrefix}] 品質を調整して再圧縮します（二分探索）．`);
-  const bestBuffer = await findOptimalQuality(sharpInstance, targetFileSize);
-
-  if (bestBuffer) {
-    console.log(`[${logPrefix}] 最適な品質での圧縮が完了しました．`);
-    return bufferToFile(bestBuffer, file);
-  }
-
-  console.warn(`[${logPrefix}] 最低品質でもターゲットサイズを超えました．`);
-  const finalBuffer = await sharpInstance.jpeg({ quality: 1 }).toBuffer();
-  return bufferToFile(finalBuffer, file);
 };
 
-/**
- * 画像を指定されたファイルサイズ以下になるように圧縮する．
- * @param file - 圧縮したい画像file
- * @returns {Promise<File>} 圧縮後の画像file
- */
 export const compressImage = async (file: File): Promise<File> => {
+  validateInputFileSize(file);
+
   return compressImageWithOptions(file, {
     targetFileSize: 500 * 1024,
     width: 1080,
     height: 1080,
-    logPrefix: 'compressImage',
+    cropToSquare: false,
   });
 };
 
-/**
- * アイコン用に画像を圧縮する．
- * @param file - 圧縮したい画像file
- * @returns {Promise<File>} 圧縮後の画像file
- */
 export const compressIconImage = async (file: File): Promise<File> => {
+  validateInputFileSize(file);
+
   return compressImageWithOptions(file, {
     targetFileSize: 100 * 1024,
     width: 256,
     height: 256,
-    logPrefix: 'compressIconImage',
     cropToSquare: true,
   });
 };

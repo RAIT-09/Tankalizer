@@ -12,7 +12,7 @@ const errorResponseSchema = z.object({
 
 export const isOurAccountRoute = createRoute({
   method: 'post',
-  path: '/isOurAccount',
+  path: '/v2/isOurAccount',
   tags: ['sample'],
   request: {
     body: {

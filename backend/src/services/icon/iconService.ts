@@ -26,7 +26,7 @@ export class IconService implements IIconService {
    * ユーザIDからアイコンを取得する
    * @param userId
    */
-  async getIcon(userId: string): Promise<Buffer> {
+  async getIcon(userId: string): Promise<Uint8Array> {
     // TODO : DBからユーザアイコンのURLを取得
     const icon_url = '';
     return await this.storageService.download(icon_url);
@@ -48,24 +48,3 @@ export class IconService implements IIconService {
     return fileName;
   }
 }
-
-// つかいかた
-// import { env } from '../../config/env.js';
-// import { S3StorageService } from '../storage/s3StorageService.js';
-// import { S3Client } from '@aws-sdk/client-s3';
-
-// // インスタンス化
-// // s3設定
-// const s3Client = new S3Client({
-//   region: 'ap-northeast-1',
-//   credentials: {
-//     accessKeyId: env.S3_ACCESS_KEY_ID,
-//     secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-//   },
-// });
-
-// // アイコンサービスのインスタンス化
-// const iconService = new IconService(new S3StorageService(s3Client, env.S3_BUCKET_NAME));
-
-// // アップロード
-// const resultUrl = await iconService.updatedIcon(file, userId);

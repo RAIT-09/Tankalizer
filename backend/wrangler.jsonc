@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tankalizer-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tankalizer",
+      // デプロイ前に `wrangler d1 create tankalizer` で発行された ID に差し替える（ローカル開発はこのままで動く）
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // 旧 infra/lambda（EventBridge）のニュース自動投稿に相当。頻度は運用に合わせて調整
+  "triggers": {
+    "crons": ["0 */6 * * *"]
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "FRONTEND_URL": "https://tankalizer.jp",
+    "S3_BUCKET_NAME": "tankalizer-images",
+    "CDN_URL": "image.tankalizer.jp",
+    "NEWS_USER_ID": "REPLACE_ME",
+    "OUR_ID": "REPLACE_ME",
+    "DEFAULT_ICON_PATH": "REPLACE_ME"
+  },
+  // secrets（wrangler secret put で登録、ローカルは .dev.vars）:
+  //   GEMINI_API_KEY / NEWS_POST_API_KEY / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY
+  "rules": [{ "type": "Text", "globs": ["**/*.txt"] }],
+  "observability": { "enabled": true }
+}

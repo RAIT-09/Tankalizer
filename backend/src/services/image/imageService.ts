@@ -33,7 +33,7 @@ export class ImageService implements IImageService {
     }
   }
 
-  getImage(imageUrl: string): Promise<Buffer> {
+  getImage(imageUrl: string): Promise<Uint8Array> {
     throw new Error('Method not implemented.');
   }
 

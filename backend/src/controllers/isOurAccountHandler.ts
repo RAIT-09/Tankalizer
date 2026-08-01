@@ -1,12 +1,12 @@
 import { z, type RouteHandler } from '@hono/zod-openapi';
-import type { Context } from 'hono';
 import { isOurAccountSchema } from '../schema/isOurAccountSchema.js';
 import type { isOurAccountRoute } from '../routes/isOurAccountRoute.js';
-import { env } from '../config/env.js';
+import type { AppEnv } from '../di/container.js';
 
 type isOurAccountSchema = z.infer<typeof isOurAccountSchema>;
 
-const isOurAccountHandler: RouteHandler<typeof isOurAccountRoute, {}> = async (c: Context) => {
+const isOurAccountHandler: RouteHandler<typeof isOurAccountRoute, AppEnv> = async (c) => {
+  const config = c.get('config');
   try {
     // 受け取ったjsonを変数に格納
     const { icon_url } = await c.req.json<isOurAccountSchema>();
@@ -28,7 +28,7 @@ const isOurAccountHandler: RouteHandler<typeof isOurAccountRoute, {}> = async (c
     }
 
     const id = match[1];
-    const our_id_str = env.OUR_ID;
+    const our_id_str = config.OUR_ID;
     const our_idArray = our_id_str.split(',').map((item) => String(item.trim()));
 
     // envファイルのour_idに含まれる数字列かどうか判定

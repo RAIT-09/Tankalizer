@@ -1,5 +1,3 @@
-import mysql from 'mysql2';
-
 export type CreatePostRepoDTO = {
   original: string;
   tanka: string[];
@@ -19,7 +17,7 @@ export type Post = {
   original: string;
   tanka: string[];
   image_path: string | null;
-  created_at: Date;
+  created_at: string;
   user_id: string;
   user_name: string;
   user_icon: string;
@@ -29,7 +27,7 @@ export type Post = {
 };
 
 export interface IPostRepository {
-  findById(id: string, dbc?: mysql.Connection): Promise<Post | null>;
+  findById(id: string): Promise<Post | null>;
   create(user: CreatePostRepoDTO): Promise<void>;
   delete(id: string, userId: string): Promise<void>;
   getPost(dto: GetPostRepoDTO): Promise<Post[]>;

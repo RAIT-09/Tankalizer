@@ -10,7 +10,7 @@ export const getFollowingUserSchema = z.object({
     example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
     description: '閲覧者のユーザーid',
   }),
-  limit: z.number().optional().default(10).openapi({
+  limit: z.number().int().min(1).max(100).optional().default(10).openapi({
     example: 10,
     description: '取得するユーザーの数',
   }),
@@ -26,7 +26,7 @@ export const Profile = z.object({
   user_name: z.string(), // ユーザ名
   profile_text: z.string(), // 自己紹介文
   icon_url: z.string(), // ユーザアイコン
-  created_at: z.date(), // ユーザ作成日時
+  created_at: z.string(), // ユーザ作成日時
   is_developer: z.boolean(), // 開発者かどうか
   is_following: z.boolean(), // フォローしているか？
   total_miyabi: z.number(), // 総獲得雅数

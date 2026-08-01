@@ -1,4 +1,3 @@
-import { env } from '../../config/env.js';
 import { type IPostService, type CreatePostResult } from './iPostService.js';
 import {
   type IPostRepository,
@@ -15,7 +14,6 @@ import {
 } from './iPostService.js';
 import { type IUserRepository, type User } from '../../repositories/user/iUserRepository.js';
 
-import { type IStorageService } from '../storage/iStorageService.js';
 import { type IImageService } from '../image/iImageService.js';
 import generateTanka from '../../lib/gemini.js';
 import { compressImage } from '../../utils/compressImage.js';
@@ -25,7 +23,8 @@ export class PostService implements IPostService {
   constructor(
     private readonly postRepository: IPostRepository,
     private readonly imageService: IImageService,
-    private readonly userRepository: IUserRepository
+    private readonly userRepository: IUserRepository,
+    private readonly geminiApiKey: string
   ) {}
 
   /**
@@ -50,7 +49,7 @@ export class PostService implements IPostService {
 
     // GeminiにTankaを生成するリクエストを送信する処理
     console.log('[PostService#createPost] 短歌の生成を開始します．');
-    const tankaResult = await generateTanka(postDto.original, compressedFile);
+    const tankaResult = await generateTanka(postDto.original, compressedFile, this.geminiApiKey);
     if (!tankaResult.isSuccess) {
       // 短歌の生成に失敗したらエラーを投げる
       throw new Error(`短歌の生成に失敗しました: ${tankaResult.message}`);

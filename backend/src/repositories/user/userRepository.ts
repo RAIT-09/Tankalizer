@@ -1,9 +1,10 @@
 import { type IUserRepository, type CreateUserRepoDTO, type User } from './iUserRepository.js';
-import db from '../../lib/db.js';
-import { env } from '../../config/env.js';
-import mysql from 'mysql2';
+import { TABLES } from '../../config/tables.js';
+import type { DbClient } from '../../lib/dbClient.js';
 
 export class UserRepository implements IUserRepository {
+  constructor(private readonly db: DbClient) {}
+
   /**
    * メールアドレスをもとにユーザーを1件検索する
    * @param connect_info - メールアドレス (例: taro-gh@gmail.com)
@@ -11,12 +12,12 @@ export class UserRepository implements IUserRepository {
    */
   async findByEmail(connect_info: string, oauth_app: 'github' | 'google'): Promise<User | null> {
     const sql = `
-      SELECT * FROM ${env.USERS_TABLE_NAME} 
+      SELECT * FROM ${TABLES.users}
       WHERE connect_info = :connect_info
       AND oauth_app = :oauth_app
       LIMIT 1;
     `;
-    const result = await db.query<User>(sql, { connect_info, oauth_app });
+    const result = await this.db.query<User>(sql, { connect_info, oauth_app });
     //console.log('作成したユーザー', result);
     return result[0] || null;
   }
@@ -26,21 +27,13 @@ export class UserRepository implements IUserRepository {
    * @param id - ユーザーID
    * @returns {Promise<User | null>} ユーザーが見つかった場合はUserオブジェクト，見つからなければnull
    */
-  async findById(id: string, dbc?: mysql.Connection): Promise<User | null> {
+  async findById(id: string): Promise<User | null> {
     const query = `
-      SELECT * FROM ${env.USERS_TABLE_NAME} 
+      SELECT * FROM ${TABLES.users}
       WHERE id = :id
       LIMIT 1;
     `;
-    const option = { id };
-    let results;
-    if (dbc) {
-      // トランザクション中の場合
-      results = await db.queryOnConnection(dbc, query, option);
-    } else {
-      // 通常の場合
-      results = await db.query(query, option);
-    }
+    const results = await this.db.query<User>(query, { id });
     return results[0] || null;
   }
 
@@ -51,11 +44,11 @@ export class UserRepository implements IUserRepository {
    */
   async findByOldIconUrl(oldIconUrl: string): Promise<User | null> {
     const sql = `
-      SELECT * FROM ${env.USERS_TABLE_NAME} 
+      SELECT * FROM ${TABLES.users}
       WHERE old_icon_url = :oldIconUrl
       LIMIT 1;
     `;
-    const result = await db.query<User>(sql, { oldIconUrl });
+    const result = await this.db.query<User>(sql, { oldIconUrl });
     return result[0] || null;
   }
 
@@ -66,17 +59,17 @@ export class UserRepository implements IUserRepository {
    */
   async create(user: CreateUserRepoDTO): Promise<void> {
     const sql = `
-      INSERT INTO ${env.USERS_TABLE_NAME} 
+      INSERT INTO ${TABLES.users}
       (id, name, oauth_app, connect_info, profile_text, icon_url) 
       VALUES (:id, :name, :oauth_app, :connect_info, :profile_text, :icon_url);
     `;
     try {
-      await db.query(sql, {
+      await this.db.run(sql, {
         id: user.id,
         name: user.name,
         oauth_app: user.oauth_app,
         connect_info: user.connect_info,
-        profile_text: user.profile_text,
+        profile_text: user.profile_text ?? null,
         icon_url: user.icon_url,
       });
       console.log(
@@ -101,14 +94,14 @@ export class UserRepository implements IUserRepository {
    */
   async updateConnectInfoAndIcon(id: string, connect_info: string, oauth_app: 'github' | 'google', icon_url: string): Promise<void> {
     const sql = `
-      UPDATE ${env.USERS_TABLE_NAME}
+      UPDATE ${TABLES.users}
       SET connect_info = :connect_info,
           oauth_app = :oauth_app,
           icon_url = :icon_url
       WHERE id = :id;
     `;
     try {
-      await db.query(sql, {
+      await this.db.run(sql, {
         id,
         connect_info,
         oauth_app,

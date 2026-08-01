@@ -1,47 +1,46 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import type { AwsClient } from 'aws4fetch';
 
 import type { IStorageService } from './iStorageService.js';
-import { streamToBuffer } from '../../utils/stream.js';
-
-const CDN_URL = 'image.tankalizer.jp';
 
 export class S3StorageService implements IStorageService {
-  constructor(private readonly s3Client: S3Client, private readonly bucketName: string) {}
+  constructor(
+    private readonly aws: AwsClient,
+    private readonly bucketName: string,
+    private readonly cdnUrl: string
+  ) {}
 
   async upload(file: File, key: string): Promise<string> {
-    // FileをBufferに変換
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // s3を叩くコマンド
-    const command = new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
+    const response = await this.aws.fetch(this.getObjectUrl(key), {
+      method: 'PUT',
+      body: await file.arrayBuffer(),
+      headers: {
+        'content-type': file.type,
+      },
     });
 
-    await this.s3Client.send(command);
+    if (!response.ok) {
+      throw new Error('ファイルのアップロードに失敗しました');
+    }
 
     return key;
   }
 
-  async download(key: string): Promise<Buffer> {
-    const command = new GetObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-    });
+  async download(key: string): Promise<Uint8Array> {
+    const response = await this.aws.fetch(this.getObjectUrl(key), { method: 'GET' });
 
-    const stream = (await this.s3Client.send(command)).Body;
-
-    if (!stream) {
+    if (!response.ok) {
       throw new Error('ファイルが見つかりません');
     }
 
-    return await streamToBuffer(stream);
+    return new Uint8Array(await response.arrayBuffer());
   }
 
   getUrl(key: string): string {
-    return `https://${CDN_URL}/${key}`;
+    return `https://${this.cdnUrl}/${key}`;
+  }
+
+  private getObjectUrl(key: string): string {
+    const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+    return `https://${this.bucketName}.s3.ap-northeast-1.amazonaws.com/${encodedKey}`;
   }
 }
