@@ -13,9 +13,9 @@
       "migrations_dir": "migrations"
     }
   ],
-  // 旧 infra/lambda（EventBridge）のニュース自動投稿に相当。頻度は運用に合わせて調整
+  // 旧 infra/lambda（EventBridge）のニュース自動投稿に相当。カットオーバーまで一時停止中（再開時は ["0 */6 * * *"] 等に戻す）
   "triggers": {
-    "crons": ["0 */6 * * *"]
+    "crons": []
   },
   "vars": {
     "NODE_ENV": "production",
