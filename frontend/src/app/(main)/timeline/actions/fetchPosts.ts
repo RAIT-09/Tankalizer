@@ -1,9 +1,8 @@
 // サーバアクション
 'use server';
 
+import { backendFetch } from '@/lib/backendFetch';
 import { PostTypes } from '@/types/postTypes';
-
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
 // response の型定義
 interface PostResponse {
@@ -44,7 +43,7 @@ export const fetchPosts = async ({
   userId?: string;
 }): Promise<PostTypes[] | []> => {
   try {
-    const res = await fetch(`${backendUrl}/timeline`, {
+    const res = await backendFetch('/v2/timeline', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -103,7 +102,7 @@ export const fetchRanking = async ({
   userId?: string;
 }): Promise<PostTypes[] | []> => {
   try {
-    const res = await fetch(`${backendUrl}/miyabiranking`, {
+    const res = await backendFetch('/v2/miyabiranking', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -163,7 +162,7 @@ export const fetchPostsForFollowing = async ({
   userId?: string;
 }): Promise<PostTypes[] | []> => {
   try {
-    const res = await fetch(`${backendUrl}/timeline/following`, {
+    const res = await backendFetch('/v2/timeline/following', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

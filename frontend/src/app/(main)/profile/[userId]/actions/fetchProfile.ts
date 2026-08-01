@@ -1,9 +1,8 @@
 // サーバアクション
 'use server';
 
+import { backendFetch } from '@/lib/backendFetch';
 import { ProfileTypes } from '@/types/profileTypes';
-
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
 /**
  * プロフィールを取得する非同期関数
@@ -22,7 +21,7 @@ const fetchProfile = async ({
   userId: string;
 }): Promise<ProfileTypes | undefined> => {
   try {
-    const res = await fetch(`${backendUrl}/profile`, {
+    const res = await backendFetch('/v2/profile', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

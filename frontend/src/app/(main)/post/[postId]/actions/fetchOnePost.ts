@@ -1,9 +1,8 @@
 // サーバアクション
 'use server';
 
+import { backendFetch } from '@/lib/backendFetch';
 import { PostTypes } from '@/types/postTypes';
-
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
 /**
  * 単体の投稿データを取得する非同期関数
@@ -22,7 +21,7 @@ export const fetchOnePost = async ({
   postId?: string;
 }): Promise<PostTypes | null> => {
   try {
-    const res = await fetch(`${backendUrl}/share`, {
+    const res = await backendFetch('/v2/share', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

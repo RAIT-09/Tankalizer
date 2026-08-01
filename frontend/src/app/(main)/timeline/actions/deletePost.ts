@@ -1,7 +1,7 @@
 // サーバアクション
 'use server';
 
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
+import { backendFetch } from '@/lib/backendFetch';
 
 /**
  * 投稿データを削除する非同期関数
@@ -20,7 +20,7 @@ const deletePost = async ({
   postId: string;
 }): Promise<boolean> => {
   try {
-    const res = await fetch(`${backendUrl}/post`, {
+    const res = await backendFetch('/v2/post', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

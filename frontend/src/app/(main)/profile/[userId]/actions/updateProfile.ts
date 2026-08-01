@@ -1,8 +1,7 @@
 'use server';
 
+import { backendFetch } from '@/lib/backendFetch';
 import { ProfileTypes } from '@/types/profileTypes';
-
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
 /**
  * プロフィールを更新する非同期関数
@@ -35,7 +34,7 @@ const updateProfile = async ({
       formData.append('icon_image', imageData);
     }
 
-    const res = await fetch(`${backendUrl}/profile`, {
+    const res = await backendFetch('/v2/profile', {
       method: 'PUT',
       body: formData,
     });

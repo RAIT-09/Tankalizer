@@ -1,5 +1,7 @@
 'use server';
 
+import { backendFetch } from '@/lib/backendFetch';
+
 interface PostData {
   originalText: string;
   imageData?: File | null;
@@ -10,8 +12,6 @@ export interface PostResult {
   message: string;
   tanka: string[];
 }
-
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
 /**
  * 短歌を投稿する
@@ -30,12 +30,12 @@ export const postYomu = async (data: PostData): Promise<PostResult> => {
 
     if (data.imageData) {
       formData.append('image', data.imageData);
-      res = await fetch(`${backendUrl}/post`, {
+      res = await backendFetch('/v2/post', {
         method: 'POST',
         body: formData,
       });
     } else {
-      res = await fetch(`${backendUrl}/post`, {
+      res = await backendFetch('/v2/post', {
         method: 'POST',
         body: formData,
       });

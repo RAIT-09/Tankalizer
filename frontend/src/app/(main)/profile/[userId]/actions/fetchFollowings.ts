@@ -1,9 +1,8 @@
 // サーバアクション
 'use server';
 
+import { backendFetch } from '@/lib/backendFetch';
 import { ProfileTypes } from '@/types/profileTypes';
-
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
 // response の型定義
 interface ProfileResponse {
@@ -42,7 +41,7 @@ export const fetchMutuals = async ({
   userId?: string;
 }): Promise<ProfileTypes[] | []> => {
   try {
-    const res = await fetch(`${backendUrl}/profile/mutual-following`, {
+    const res = await backendFetch('/v2/profile/mutual-following', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -102,7 +101,7 @@ export const fetchFollowing = async ({
   userId?: string;
 }): Promise<ProfileTypes[] | []> => {
   try {
-    const res = await fetch(`${backendUrl}/profile/following`, {
+    const res = await backendFetch('/v2/profile/following', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

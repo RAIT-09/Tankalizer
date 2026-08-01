@@ -1,6 +1,6 @@
 'use server';
 
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
+import { backendFetch } from '@/lib/backendFetch';
 
 /**
  * 認可されたユーザーかどうかを確認する
@@ -11,7 +11,7 @@ export const checkAuthUser = async ({ iconUrl }: { iconUrl: string }): Promise<b
   try {
     console.log(iconUrl);
 
-    const res = await fetch(`${backendUrl}/isOurAccount`, {
+    const res = await backendFetch('/v2/isOurAccount', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
