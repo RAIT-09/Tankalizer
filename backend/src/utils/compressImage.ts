@@ -1,5 +1,7 @@
 import { PhotonImage, SamplingFilter, crop, resize } from '@cf-wasm/photon';
 
+import { BadRequestError } from './errors.js';
+
 interface CompressionOptions {
   targetFileSize: number;
   width: number;
@@ -8,6 +10,13 @@ interface CompressionOptions {
 }
 
 const QUALITY_LEVELS = [80, 55, 30] as const;
+const MAX_INPUT_FILE_SIZE = 10 * 1024 * 1024;
+
+const validateInputFileSize = (file: File): void => {
+  if (file.size > MAX_INPUT_FILE_SIZE) {
+    throw new BadRequestError('画像ファイルのサイズは10MB以下にしてください．');
+  }
+};
 
 const isImageFile = (file: File): boolean => {
   return file.type.startsWith('image/');
@@ -70,6 +79,8 @@ const compressImageWithOptions = async (file: File, options: CompressionOptions)
 };
 
 export const compressImage = async (file: File): Promise<File> => {
+  validateInputFileSize(file);
+
   return compressImageWithOptions(file, {
     targetFileSize: 500 * 1024,
     width: 1080,
@@ -79,6 +90,8 @@ export const compressImage = async (file: File): Promise<File> => {
 };
 
 export const compressIconImage = async (file: File): Promise<File> => {
+  validateInputFileSize(file);
+
   return compressImageWithOptions(file, {
     targetFileSize: 100 * 1024,
     width: 256,

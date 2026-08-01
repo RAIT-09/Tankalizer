@@ -40,6 +40,7 @@ export class S3StorageService implements IStorageService {
   }
 
   private getObjectUrl(key: string): string {
-    return `https://${this.bucketName}.s3.ap-northeast-1.amazonaws.com/${encodeURI(key)}`;
+    const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+    return `https://${this.bucketName}.s3.ap-northeast-1.amazonaws.com/${encodedKey}`;
   }
 }
