@@ -23,6 +23,9 @@ const config: AppConfig = {
   CDN_URL: 'https://cdn.example.com',
   OUR_ID: 'our-user',
   DEFAULT_ICON_PATH: 'icons/default.png',
+  BACKEND_JWT_SECRET: 'test-secret-that-is-long-enough-32',
+  JWT_ISSUER: 'tankalizer-web',
+  JWT_AUDIENCE: 'tankalizer-api',
 };
 
 const createContainer = () => {

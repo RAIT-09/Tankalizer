@@ -42,6 +42,7 @@ const user: User = {
   profile_text: null,
   icon_url: 'icons/viewer.png',
   created_at: '2025-01-01T00:00:00Z',
+  provider_account_id: null,
 };
 
 const createDependencies = () => {
