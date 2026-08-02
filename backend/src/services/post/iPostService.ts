@@ -6,11 +6,11 @@ import type { getOnePostSchema } from '../../schema/Post/getOnePostSchemaV2.js';
 import type { getFollowingPostSchema } from '../../schema/Post/getFollowingPostSchemaV2.js';
 import type { Post } from '../../repositories/post/iPostRepository.js';
 
-export type CreatePostDTO = z.infer<typeof createPostSchema>;
-export type DeletePostDTO = z.infer<typeof deletePostSchema>;
-export type GetPostDTO = z.infer<typeof getPostSchema>;
-export type GetOnePostDTO = z.infer<typeof getOnePostSchema>;
-export type GetFollowingPostDTO = z.infer<typeof getFollowingPostSchema>;
+export type CreatePostDTO = z.infer<typeof createPostSchema> & { user_id: string };
+export type DeletePostDTO = z.infer<typeof deletePostSchema> & { user_id: string };
+export type GetPostDTO = z.infer<typeof getPostSchema> & { viewerId?: string };
+export type GetOnePostDTO = z.infer<typeof getOnePostSchema> & { viewerId?: string };
+export type GetFollowingPostDTO = z.infer<typeof getFollowingPostSchema> & { viewerId: string };
 
 export type CreatePostResult = {
   message: string;

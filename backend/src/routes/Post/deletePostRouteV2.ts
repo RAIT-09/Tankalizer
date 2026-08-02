@@ -1,3 +1,4 @@
+import { requireAuth } from '../../middleware/auth.js';
 import { z } from '@hono/zod-openapi';
 import { createRoute } from '@hono/zod-openapi';
 import {
@@ -14,6 +15,7 @@ const ErrorResponseSchema = z.object({
 });
 
 export const deletePostRouteV2 = createRoute({
+  middleware: [requireAuth] as const,
   method: 'delete',
   path: '/v2/post',
   tags: ['Post V2'],

@@ -2,6 +2,7 @@ import NextAuth from 'next-auth';
 import GitHub from 'next-auth/providers/github';
 import Google from 'next-auth/providers/google';
 import type { Provider } from 'next-auth/providers';
+import { signProvisioningToken } from '@/lib/apiToken';
 import { backendFetch } from '@/lib/backendFetch';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -67,9 +68,19 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
           formData.append('icon_url', user.image || `${baseUrl}/iconDefault.png`);
 
+          // セッション確立前なので、OAuth で確認済みの provider アカウントを署名して主体の代わりにする
+          const provisioningToken = await signProvisioningToken(
+            account.provider,
+            account.providerAccountId,
+            user.email
+          );
+
           const res = await backendFetch('/v2/user', {
             method: 'POST',
             body: formData,
+            headers: {
+              Authorization: `Bearer ${provisioningToken}`,
+            },
           });
 
           if (!res.ok) {

@@ -3,6 +3,7 @@ import { type RouteHandler } from '@hono/zod-openapi';
 import type { unfollowRoute } from '../../routes/Follow/unfollowRoute.js';
 import { FollowError } from '../../services/follow/iFollowService.js';
 import type { AppEnv } from '../../di/container.js';
+import { getUserId } from '../../middleware/auth.js';
 
 /**
  * アンフォロー機能のハンドラー
@@ -18,7 +19,8 @@ import type { AppEnv } from '../../di/container.js';
 const unfollowHandler: RouteHandler<typeof unfollowRoute, AppEnv> = async (c) => {
   const { followService } = c.get('container');
   // リクエストボディからデータを取得
-  const { followerId, followeeId } = await c.req.json();
+  const { followeeId } = c.req.valid('json');
+  const followerId = getUserId(c);
 
   console.log(`[Handler] アンフォローリクエストを受け付けました: ${followerId} -> ${followeeId}`);
 

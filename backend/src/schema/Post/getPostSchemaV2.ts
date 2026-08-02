@@ -14,10 +14,6 @@ export const getPostSchema = z.object({
     example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
     description: '特定のユーザーの投稿を取得するためのユーザーid',
   }),
-  viewerId: z.string().optional().openapi({
-    example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
-    description: '閲覧者のユーザーid',
-  }),
 });
 
 // postのスキーマ

@@ -60,8 +60,8 @@ export class UserRepository implements IUserRepository {
   async create(user: CreateUserRepoDTO): Promise<void> {
     const sql = `
       INSERT INTO ${TABLES.users}
-      (id, name, oauth_app, connect_info, profile_text, icon_url) 
-      VALUES (:id, :name, :oauth_app, :connect_info, :profile_text, :icon_url);
+      (id, name, oauth_app, connect_info, profile_text, icon_url, provider_account_id)
+      VALUES (:id, :name, :oauth_app, :connect_info, :profile_text, :icon_url, :provider_account_id);
     `;
     try {
       await this.db.run(sql, {
@@ -71,6 +71,7 @@ export class UserRepository implements IUserRepository {
         connect_info: user.connect_info,
         profile_text: user.profile_text ?? null,
         icon_url: user.icon_url,
+        provider_account_id: user.provider_account_id,
       });
       console.log(
         `[UserRepository#create] ユーザーの作成に成功しました．(oauth_app: ${user.oauth_app}, connect_info: ${user.connect_info})`
@@ -92,12 +93,19 @@ export class UserRepository implements IUserRepository {
    * @param icon_url - 新しいアイコンURL
    * @returns {Promise<void>}
    */
-  async updateConnectInfoAndIcon(id: string, connect_info: string, oauth_app: 'github' | 'google', icon_url: string): Promise<void> {
+  async updateConnectInfoAndIcon(
+    id: string,
+    connect_info: string,
+    oauth_app: 'github' | 'google',
+    icon_url: string,
+    provider_account_id: string
+  ): Promise<void> {
     const sql = `
       UPDATE ${TABLES.users}
       SET connect_info = :connect_info,
           oauth_app = :oauth_app,
-          icon_url = :icon_url
+          icon_url = :icon_url,
+          provider_account_id = :provider_account_id
       WHERE id = :id;
     `;
     try {
@@ -106,6 +114,7 @@ export class UserRepository implements IUserRepository {
         connect_info,
         oauth_app,
         icon_url,
+        provider_account_id,
       });
       console.log(
         `[UserRepository#updateConnectInfoAndIcon] ユーザー情報の更新に成功しました．(user_id: ${id})`
@@ -113,6 +122,34 @@ export class UserRepository implements IUserRepository {
     } catch (error) {
       console.error(
         `[UserRepository#updateConnectInfoAndIcon] ユーザー情報の更新に失敗しました．(user_id: ${id})`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * 未記録のユーザーに OAuth アカウントIDを紐付ける
+   * @param id - ユーザーID
+   * @param provider_account_id - OAuth のアカウントID
+   * @returns {Promise<void>}
+   */
+  async linkProviderAccount(id: string, provider_account_id: string): Promise<void> {
+    // 競合時に上書きしないよう、未記録の行だけを対象にする
+    const sql = `
+      UPDATE ${TABLES.users}
+      SET provider_account_id = :provider_account_id
+      WHERE id = :id
+      AND provider_account_id IS NULL;
+    `;
+    try {
+      await this.db.run(sql, { id, provider_account_id });
+      console.log(
+        `[UserRepository#linkProviderAccount] OAuthアカウントIDを紐付けました．(user_id: ${id})`
+      );
+    } catch (error) {
+      console.error(
+        `[UserRepository#linkProviderAccount] OAuthアカウントIDの紐付けに失敗しました．(user_id: ${id})`,
         error
       );
       throw error;

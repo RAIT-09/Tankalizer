@@ -8,7 +8,7 @@ type idiconConverterSchema = z.infer<typeof idiconConverterSchema>;
 const idiconConverterHandler: RouteHandler<typeof idiconConverterRoute, AppEnv> = async (c) => {
   try {
     // 受け取ったjsonを各変数に格納
-    const { input } = await c.req.json<idiconConverterSchema>();
+    const { input } = c.req.valid('json');
 
     const match = input.match(/\/u\/(\d+)/);
 

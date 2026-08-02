@@ -20,7 +20,7 @@ import type { IProfileService } from '../services/profile/iProfileService.js';
 import { ProfileService } from '../services/profile/profileService.js';
 import { S3StorageService } from '../services/storage/s3StorageService.js';
 import type { IStorageService } from '../services/storage/iStorageService.js';
-import type { IUserService } from '../services/user/iUserService.js';
+import type { IUserService, VerifiedOAuthAccount } from '../services/user/iUserService.js';
 import { UserService } from '../services/user/userService.js';
 
 type Env = AppConfig & { DB: typeof DB };
@@ -41,6 +41,9 @@ export type AppEnv = {
   Variables: {
     container: Container;
     config: AppConfig;
+    // optionalAuth では未設定になるため、更新系は requireAuth で必ず埋まっていることを保証する
+    userId?: string;
+    provisioning?: VerifiedOAuthAccount;
   };
 };
 

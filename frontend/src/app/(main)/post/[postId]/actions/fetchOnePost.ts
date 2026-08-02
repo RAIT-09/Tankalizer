@@ -1,7 +1,7 @@
 // サーバアクション
 'use server';
 
-import { backendFetch } from '@/lib/backendFetch';
+import { apiFetch } from '@/lib/apiClient';
 import { PostTypes } from '@/types/postTypes';
 
 /**
@@ -9,26 +9,22 @@ import { PostTypes } from '@/types/postTypes';
  * @async
  * @function fetchOnePost
  * @param {Object} params - 投稿データ取得のためのパラメータオブジェクト
- * @param {string} params.userId - ユーザのID
  * @param {string} params.postId - 取得する投稿のID（オフセット）
  * @returns {Promise<PostTypes[]>} 投稿データを返すPromise．投稿が存在しない場合はnullを返す．
  */
 export const fetchOnePost = async ({
-  userId,
   postId,
 }: {
-  userId?: string;
   postId?: string;
 }): Promise<PostTypes | null> => {
   try {
-    const res = await backendFetch('/v2/share', {
+    const res = await apiFetch('/v2/share', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         id: postId,
-        viewerId: userId,
       }),
     });
 

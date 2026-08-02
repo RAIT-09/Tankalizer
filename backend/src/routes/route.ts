@@ -16,9 +16,6 @@ import getMutualFollowingUserHandlerV2 from '../controllers/Profile/getMutualFol
 import getProfileHandlerV2 from '../controllers/Profile/getProfileHandlerV2.js';
 import updateProfileHandlerV2 from '../controllers/Profile/updateProfileHandlerV2.js';
 import createUserHandlerV2 from '../controllers/User/createUserHandlerV2.js';
-import helloWorldHandler from '../controllers/helloHandler.js';
-import idiconConverterHandler from '../controllers/idiconConverterHandler.js';
-import isOurAccountHandler from '../controllers/isOurAccountHandler.js';
 import { followRoute } from './Follow/followRoute.js';
 import { unfollowRoute } from './Follow/unfollowRoute.js';
 import { createMiyabiRouteV2 } from './Miyabi/createMiyabiRouteV2.js';
@@ -35,16 +32,10 @@ import { getMutualFollowingUserRouteV2 } from './Profile/getMutualFollowingUserR
 import { getProfileRouteV2 } from './Profile/getProfileRouteV2.js';
 import { updateProfileRouteV2 } from './Profile/updateProfileRouteV2.js';
 import { createUserRouteV2 } from './User/createUserRouteV2.js';
-import { helloRoute } from './helloRoute.js';
-import { idiconConverterRoute } from './idiconConverterRoute.js';
-import { isOurAccountRoute } from './isOurAccountRoute.js';
 
 const router = new OpenAPIHono<AppEnv>();
 
 export default router
-  .openapi(helloRoute, helloWorldHandler)
-  .openapi(idiconConverterRoute, idiconConverterHandler)
-  .openapi(isOurAccountRoute, isOurAccountHandler)
   .openapi(newsTankaRoute, newsTankaHandler)
   .openapi(createUserRouteV2, createUserHandlerV2)
   .openapi(createPostRouteV2, createPostHandlerV2)

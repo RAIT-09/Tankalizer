@@ -15,7 +15,7 @@ type helloSchema = z.infer<typeof helloSchema>;
 
 const helloWorldHandler: RouteHandler<typeof helloRoute, AppEnv> = async (c) => {
   // POST サンプル
-  const { id, password } = await c.req.json<helloSchema>();
+  const { id, password } = c.req.valid('json');
   console.log({ id, password });
 
   console.log('Hello Hono!');

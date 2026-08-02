@@ -48,7 +48,6 @@ const ReportDialog = ({ className, isOpen, setIsOpen, post }: ReportDialogProps)
       if (!userId) return;
       const data = await fetchProfile({
         targetUserId: userId as string,
-        userId: session.data?.user_id ?? '',
       });
       setProfile(data);
     };

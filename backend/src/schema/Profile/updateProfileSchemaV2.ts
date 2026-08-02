@@ -2,10 +2,6 @@ import { z } from '@hono/zod-openapi';
 
 // リクエストの型
 export const updateProfileSchema = z.object({
-  user_id: z.string().openapi({
-    example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
-    description: 'プロフィールを編集したいユーザーのID',
-  }),
   user_name: z.string().max(20).openapi({
     example: '太郎くん',
     description: '新しいユーザー名',

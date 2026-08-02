@@ -6,10 +6,6 @@ export const getMiyabiRankingSchema = z.object({
     example: 10,
     description: '取得する投稿の数',
   }),
-  viewerId: z.string().optional().openapi({
-    example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
-    description: '閲覧者のユーザーid',
-  }),
 });
 
 export const RankedPost = z.object({

@@ -1,3 +1,4 @@
+import { requireAuth } from '../../middleware/auth.js';
 import { z, createRoute } from '@hono/zod-openapi';
 import { followRequestSchema, followResponseSchema } from '../../schema/Follow/followSchema.js';
 
@@ -13,6 +14,7 @@ const errorResponseSchema = z.object({
  * APIエンドポイントの仕様を定義
  */
 export const followRoute = createRoute({
+  middleware: [requireAuth] as const,
   method: 'post', // HTTPメソッド
   path: '/v2/follow', // エンドポイントのパス
   tags: ['Follow'], // OpenAPIでのタグ分け

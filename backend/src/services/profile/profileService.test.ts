@@ -21,6 +21,7 @@ const user: User = {
   profile_text: '自己紹介',
   icon_url: 'icons/current.png',
   created_at: '2025-01-01T00:00:00Z',
+  provider_account_id: null,
 };
 
 const viewer: User = {

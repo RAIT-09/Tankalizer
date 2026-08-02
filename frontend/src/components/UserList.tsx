@@ -65,14 +65,12 @@ const UserList = ({ profile, limit, max, mode = 'mutuals', className }: UserList
         limit: limit,
         cursor: offsetIdRef.current,
         targetUserId: profile.userId ?? '',
-        userId: session.data?.user_id ?? '',
       });
     } else {
       newUsers = await fetchFollowing({
         limit: max,
         cursor: offsetIdRef.current,
         targetUserId: profile.userId ?? '',
-        userId: session.data?.user_id ?? '',
       });
     }
     console.log('取得したユーザ数:', newUsers);

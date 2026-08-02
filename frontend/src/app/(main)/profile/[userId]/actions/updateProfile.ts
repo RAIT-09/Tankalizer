@@ -1,6 +1,6 @@
 'use server';
 
-import { backendFetch } from '@/lib/backendFetch';
+import { apiFetchAsUser } from '@/lib/apiClient';
 import { ProfileTypes } from '@/types/profileTypes';
 
 /**
@@ -8,33 +8,29 @@ import { ProfileTypes } from '@/types/profileTypes';
  * @async
  * @function updateProfile
  * @param {Object} params - 更新用パラメータ
- * @param {string} params.userId - ユーザのID
  * @param {string} params.name - ユーザ名
  * @param {string} params.bio - 自己紹介
  * @param {File | null} params.imageData - プロフィール画像のデータ
  * @returns {Promise<ProfileTypes | null>} 更新後のプロフィールデータ、失敗時はnullを返す
  */
 const updateProfile = async ({
-  userId,
   name,
   bio,
   imageData,
 }: {
-  userId: string;
   name: string;
   bio: string;
   imageData: File | null;
 }): Promise<ProfileTypes | null> => {
   try {
     const formData = new FormData();
-    formData.append('user_id', userId);
     formData.append('user_name', name);
     formData.append('profile_text', bio);
     if (imageData) {
       formData.append('icon_image', imageData);
     }
 
-    const res = await backendFetch('/v2/profile', {
+    const res = await apiFetchAsUser('/v2/profile', {
       method: 'PUT',
       body: formData,
     });
