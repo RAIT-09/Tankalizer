@@ -155,7 +155,6 @@ const SignedInPage = (): React.ReactNode => {
     const res = await postYomu({
       originalText: text,
       imageData: file?.file ?? null,
-      userId: session.data?.user_id ?? '',
     });
 
     if (res.message !== '投稿に成功しました') {
@@ -173,7 +172,6 @@ const SignedInPage = (): React.ReactNode => {
     const getProfile = async () => {
       const data = await fetchProfile({
         targetUserId: session.data?.user_id ?? '',
-        userId: session.data?.user_id ?? '',
       });
       setProfile(data ?? null);
     };

@@ -1,11 +1,11 @@
 'use server';
 
-import { backendFetch } from '@/lib/backendFetch';
+import { apiFetchAsUser } from '@/lib/apiClient';
 import { FollowRequest } from '@/types/followunfollowTypes';
 
 export const follow = async (data: FollowRequest) => {
   try {
-    const res = await backendFetch('/v2/follow', {
+    const res = await apiFetchAsUser('/v2/follow', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -27,7 +27,7 @@ export const follow = async (data: FollowRequest) => {
 
 export const unfollow = async (data: FollowRequest) => {
   try {
-    const res = await backendFetch('/v2/unfollow', {
+    const res = await apiFetchAsUser('/v2/unfollow', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

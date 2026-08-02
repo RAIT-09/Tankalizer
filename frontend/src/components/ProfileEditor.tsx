@@ -61,7 +61,6 @@ const ProfileEditor = ({ className, isOpen, setIsOpen, profile }: ProfileEditorP
   const handleSave = useCallback(async () => {
     try {
       const updatedProfile = await updateProfile({
-        userId: session.data?.user_id ?? '',
         name,
         bio,
         imageData: isImageUpdated.current ? fileInputRef.current?.files?.[0] ?? null : null,

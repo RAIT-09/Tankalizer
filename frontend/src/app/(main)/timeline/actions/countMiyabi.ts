@@ -1,25 +1,23 @@
 // サーバアクション
 'use server';
 
-import { backendFetch } from '@/lib/backendFetch';
+import { apiFetchAsUser } from '@/lib/apiClient';
 
 /**
  * 雅を増やす非同期関数
  * @async
  * @function addMiyabi
  * @param {Object} params - 雅追加のためのパラメータオブジェクト
- * @param {string} params.userId - ユーザのID
  * @param {string} params.postId - 雅する投稿のID
  */
-export const addMiyabi = async ({ userId, postId }: { userId: string; postId: string }) => {
+export const addMiyabi = async ({ postId }: { postId: string }) => {
   try {
-    const res = await backendFetch('/v2/miyabi', {
+    const res = await apiFetchAsUser('/v2/miyabi', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user_id: userId,
         post_id: postId,
       }),
     });
@@ -38,19 +36,17 @@ export const addMiyabi = async ({ userId, postId }: { userId: string; postId: st
  * @async
  * @function removeMiyabi
  * @param {Object} params - 雅追加のためのパラメータオブジェクト
- * @param {string} params.userId - ユーザのID
  * @param {string} params.postId - 雅する投稿のID
  */
-export const removeMiyabi = async ({ userId, postId }: { userId: string; postId: string }) => {
+export const removeMiyabi = async ({ postId }: { postId: string }) => {
   try {
-    const res = await backendFetch('/v2/miyabi', {
+    const res = await apiFetchAsUser('/v2/miyabi', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         post_id: postId,
-        user_id: userId,
       }),
     });
 

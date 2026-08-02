@@ -1,7 +1,7 @@
 // サーバアクション
 'use server';
 
-import { backendFetch } from '@/lib/backendFetch';
+import { apiFetch, apiFetchAsUser } from '@/lib/apiClient';
 import { PostTypes } from '@/types/postTypes';
 
 // response の型定義
@@ -28,22 +28,19 @@ interface PostResponse {
  * @param {number} params.limit - 取得する投稿の最大件数
  * @param {string} params.cursor - 取得を開始する投稿のID（オフセット）
  * @param {string} params.filterByUserId - 取得する対象のユーザID
- * @param {string} params.userId - 閲覧ユーザのID
  * @returns {Promise<PostTypes[]>} 投稿データの配列を返すPromise．投稿が存在しない場合は空配列を返す．
  */
 export const fetchPosts = async ({
   limit,
   cursor,
   filterByUserId,
-  userId,
 }: {
   limit: number;
   cursor?: string;
   filterByUserId?: string;
-  userId?: string;
 }): Promise<PostTypes[] | []> => {
   try {
-    const res = await backendFetch('/v2/timeline', {
+    const res = await apiFetch('/v2/timeline', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,7 +49,6 @@ export const fetchPosts = async ({
         limit: limit,
         cursor: cursor,
         filterByUserId: filterByUserId,
-        viewerId: userId,
       }),
     });
 
@@ -91,25 +87,21 @@ export const fetchPosts = async ({
  * @function fetchRanking
  * @param {Object} params - ランキング取得のためのパラメータオブジェクト
  * @param {number} params.limit - 取得する投稿の最大件数
- * @param {string} params.userId - ユーザのID
  * @returns {Promise<PostTypes[]>} 投稿データの配列を返すPromise．投稿が存在しない場合は空配列を返す．
  */
 export const fetchRanking = async ({
   limit,
-  userId,
 }: {
   limit: number;
-  userId?: string;
 }): Promise<PostTypes[] | []> => {
   try {
-    const res = await backendFetch('/v2/miyabiranking', {
+    const res = await apiFetch('/v2/miyabiranking', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         limit: limit,
-        viewerId: userId,
       }),
     });
 
@@ -149,20 +141,17 @@ export const fetchRanking = async ({
  * @param {Object} params - 投稿データ取得のためのパラメータオブジェクト
  * @param {number} params.limit - 取得する投稿の最大件数
  * @param {string} params.cursor - 取得を開始する投稿のID（オフセット）
- * @param {string} params.userId - 閲覧ユーザのID
  * @returns {Promise<PostTypes[]>} 投稿データの配列を返すPromise．投稿が存在しない場合は空配列を返す．
  */
 export const fetchPostsForFollowing = async ({
   limit,
   cursor,
-  userId,
 }: {
   limit: number;
   cursor?: string;
-  userId?: string;
 }): Promise<PostTypes[] | []> => {
   try {
-    const res = await backendFetch('/v2/timeline/following', {
+    const res = await apiFetchAsUser('/v2/timeline/following', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -170,7 +159,6 @@ export const fetchPostsForFollowing = async ({
       body: JSON.stringify({
         limit: limit,
         cursor: cursor,
-        viewerId: userId,
       }),
     });
 

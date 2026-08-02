@@ -1,7 +1,7 @@
 // サーバアクション
 'use server';
 
-import { backendFetch } from '@/lib/backendFetch';
+import { apiFetch } from '@/lib/apiClient';
 import { ProfileTypes } from '@/types/profileTypes';
 
 /**
@@ -10,25 +10,21 @@ import { ProfileTypes } from '@/types/profileTypes';
  * @function fetchProfile
  * @param {Object} params - 投稿データ取得のためのパラメータオブジェクト
  * @param {string} params.targetUserId - ターゲットユーザのID（プロフィールを取得するユーザのID）
- * @param {string} params.userId - ユーザのID
  * @returns {Promise<ProfileTypes>} プロフィールデータを返すPromise．プロフィールが存在しない場合はnullを返す．
  */
 const fetchProfile = async ({
   targetUserId,
-  userId,
 }: {
   targetUserId: string;
-  userId: string;
 }): Promise<ProfileTypes | undefined> => {
   try {
-    const res = await backendFetch('/v2/profile', {
+    const res = await apiFetch('/v2/profile', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         user_id: targetUserId,
-        viewer_id: userId,
       }),
     });
 

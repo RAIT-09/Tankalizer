@@ -1,11 +1,10 @@
 'use server';
 
-import { backendFetch } from '@/lib/backendFetch';
+import { apiFetchAsUser } from '@/lib/apiClient';
 
 interface PostData {
   originalText: string;
   imageData?: File | null;
-  userId: string;
 }
 
 export interface PostResult {
@@ -26,16 +25,15 @@ export const postYomu = async (data: PostData): Promise<PostResult> => {
 
     const formData = new FormData();
     formData.append('original', data.originalText);
-    formData.append('user_id', data.userId);
 
     if (data.imageData) {
       formData.append('image', data.imageData);
-      res = await backendFetch('/v2/post', {
+      res = await apiFetchAsUser('/v2/post', {
         method: 'POST',
         body: formData,
       });
     } else {
-      res = await backendFetch('/v2/post', {
+      res = await apiFetchAsUser('/v2/post', {
         method: 'POST',
         body: formData,
       });

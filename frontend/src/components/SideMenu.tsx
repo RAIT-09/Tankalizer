@@ -57,7 +57,6 @@ const SideMenu = ({ className, style, setIsOpen }: SideMenuProps) => {
       if (!userId) return;
       const data = await fetchProfile({
         targetUserId: userId as string,
-        userId: session.data?.user_id ?? '',
       });
       setProfile(data);
     };
