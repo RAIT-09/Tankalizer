@@ -4,9 +4,9 @@ import type { deleteMiyabiSchema } from '../../schema/Miyabi/deleteMiyabiSchemaV
 import type { getMiyabiRankingSchema } from '../../schema/Miyabi/getMiyabiRankingSchemaV2.js';
 import type { RankedPost } from '../../repositories/miyabi/iMiyabiRepository.js';
 
-export type CreateMiyabiDTO = z.infer<typeof createMiyabiSchema>;
-export type DeleteMiyabiDTO = z.infer<typeof deleteMiyabiSchema>;
-export type GetMiyabiRankingDTO = z.infer<typeof getMiyabiRankingSchema>;
+export type CreateMiyabiDTO = z.infer<typeof createMiyabiSchema> & { user_id: string };
+export type DeleteMiyabiDTO = z.infer<typeof deleteMiyabiSchema> & { user_id: string };
+export type GetMiyabiRankingDTO = z.infer<typeof getMiyabiRankingSchema> & { viewerId?: string };
 
 export type CreateMiyabiResult = {
   message: string;
