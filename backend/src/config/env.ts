@@ -13,6 +13,9 @@ const envSchema = z.object({
   CDN_URL: z.string(),
   OUR_ID: z.string(),
   DEFAULT_ICON_PATH: z.string(),
+  BACKEND_JWT_SECRET: z.string().min(32),
+  JWT_ISSUER: z.string().default('tankalizer-web'),
+  JWT_AUDIENCE: z.string().default('tankalizer-api'),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;
