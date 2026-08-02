@@ -9,7 +9,7 @@ const isOurAccountHandler: RouteHandler<typeof isOurAccountRoute, AppEnv> = asyn
   const config = c.get('config');
   try {
     // 受け取ったjsonを変数に格納
-    const { icon_url } = await c.req.json<isOurAccountSchema>();
+    const { icon_url } = c.req.valid('json');
 
     // 数字列の抽出
     const match = icon_url.match(/\/u\/(\d+)/);
