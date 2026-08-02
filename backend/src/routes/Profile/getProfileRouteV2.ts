@@ -1,3 +1,4 @@
+import { optionalAuth } from '../../middleware/auth.js';
 import { z } from '@hono/zod-openapi';
 import { createRoute } from '@hono/zod-openapi';
 import {
@@ -14,6 +15,7 @@ const ErrorResponseSchema = z.object({
 });
 
 export const getProfileRouteV2 = createRoute({
+  middleware: [optionalAuth] as const,
   method: 'post',
   path: '/v2/profile',
   tags: ['Profile V2'],
