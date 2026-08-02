@@ -2,6 +2,7 @@ import { z, type RouteHandler } from '@hono/zod-openapi';
 import type { getPostRouteV2 } from '../../routes/Post/getPostRouteV2.js';
 import { getPostSchema } from '../../schema/Post/getPostSchemaV2.js';
 import type { AppEnv } from '../../di/container.js';
+import { internalErrorMessage } from '../../middleware/errorHandler.js';
 
 type getPostSchema = z.infer<typeof getPostSchema>;
 
@@ -10,7 +11,8 @@ const getPostHandlerV2: RouteHandler<typeof getPostRouteV2, AppEnv> = async (c) 
 
   try {
     // リクエストからデータを取得
-    const { limit, cursor, filterByUserId, viewerId } = await c.req.json<getPostSchema>();
+    const { limit, cursor, filterByUserId } = c.req.valid('json');
+    const viewerId = c.get('userId');
 
     const posts = await postService.getPost({ limit, cursor, filterByUserId, viewerId });
 
@@ -22,7 +24,7 @@ const getPostHandlerV2: RouteHandler<typeof getPostRouteV2, AppEnv> = async (c) 
       200
     );
   } catch (err: any) {
-    return c.json({ message: err.message, statusCode: 500, error: 'Internal Server Error' }, 500);
+    return c.json({ message: internalErrorMessage(err, c.get('config').NODE_ENV), statusCode: 500, error: 'Internal Server Error' }, 500);
   }
 };
 

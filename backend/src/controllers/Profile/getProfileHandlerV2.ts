@@ -3,6 +3,7 @@ import { NotFoundError } from '../../services/profile/iProfileService.js';
 import type { getProfileRouteV2 } from '../../routes/Profile/getProfileRouteV2.js';
 import { getProfileSchema } from '../../schema/Profile/getProfileSchemaV2.js';
 import type { AppEnv } from '../../di/container.js';
+import { internalErrorMessage } from '../../middleware/errorHandler.js';
 
 type getProfileSchema = z.infer<typeof getProfileSchema>;
 
@@ -11,7 +12,8 @@ const getProfileHandlerV2: RouteHandler<typeof getProfileRouteV2, AppEnv> = asyn
 
   try {
     // リクエストからデータを取得
-    const { user_id, viewer_id } = await c.req.json<getProfileSchema>();
+    const { user_id } = c.req.valid('json');
+    const viewer_id = c.get('userId');
 
     const profile = await profileService.getProfile({ user_id, viewer_id });
 
@@ -26,7 +28,7 @@ const getProfileHandlerV2: RouteHandler<typeof getProfileRouteV2, AppEnv> = asyn
     if (err instanceof NotFoundError) {
       return c.json({ message: err.message, statusCode: 404, error: 'Not Found' }, 404);
     }
-    return c.json({ message: err.message, statusCode: 500, error: 'Internal Server Error' }, 500);
+    return c.json({ message: internalErrorMessage(err, c.get('config').NODE_ENV), statusCode: 500, error: 'Internal Server Error' }, 500);
   }
 };
 

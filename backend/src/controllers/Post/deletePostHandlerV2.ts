@@ -2,6 +2,8 @@ import { z, type RouteHandler } from '@hono/zod-openapi';
 import type { deletePostRouteV2 } from '../../routes/Post/deletePostRouteV2.js';
 import { deletePostSchema } from '../../schema/Post/deletePostSchemaV2.js';
 import type { AppEnv } from '../../di/container.js';
+import { getUserId } from '../../middleware/auth.js';
+import { internalErrorMessage } from '../../middleware/errorHandler.js';
 
 type deletePostSchema = z.infer<typeof deletePostSchema>;
 
@@ -10,7 +12,8 @@ const deletePostHandlerV2: RouteHandler<typeof deletePostRouteV2, AppEnv> = asyn
 
   try {
     // リクエストからデータを取得
-    const { post_id, user_id } = await c.req.json<deletePostSchema>();
+    const { post_id } = c.req.valid('json');
+    const user_id = getUserId(c);
 
     // サービスを呼び出す
     const result = await postService.deletePost({ post_id, user_id });
@@ -28,7 +31,7 @@ const deletePostHandlerV2: RouteHandler<typeof deletePostRouteV2, AppEnv> = asyn
     console.error('[deletePostHandlerV2] エラーが発生しました．', err);
     return c.json(
       {
-        message: err.message || '投稿削除処理中に不明なエラーが発生しました．',
+        message: internalErrorMessage(err, c.get('config').NODE_ENV),
         statusCode: 500,
         error: 'Internal Server Error',
       },

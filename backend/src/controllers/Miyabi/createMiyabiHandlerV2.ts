@@ -3,6 +3,8 @@ import { NotFoundError, ConflictError } from '../../services/miyabi/iMiyabiServi
 import type { createMiyabiSchema } from '../../schema/Miyabi/createMiyabiSchemaV2.js';
 import type { createMiyabiRouteV2 } from '../../routes/Miyabi/createMiyabiRouteV2.js';
 import type { AppEnv } from '../../di/container.js';
+import { getUserId } from '../../middleware/auth.js';
+import { internalErrorMessage } from '../../middleware/errorHandler.js';
 
 type createMiyabiSchema = z.infer<typeof createMiyabiSchema>;
 
@@ -11,7 +13,8 @@ const createMiyabiHandlerV2: RouteHandler<typeof createMiyabiRouteV2, AppEnv> = 
 
   try {
     // リクエストからデータを取得
-    const { user_id, post_id } = await c.req.json<createMiyabiSchema>();
+    const { post_id } = c.req.valid('json');
+    const user_id = getUserId(c);
 
     // サービスを呼び出す
     const result = await miyabiService.createMiyabi({ user_id, post_id });
@@ -30,7 +33,7 @@ const createMiyabiHandlerV2: RouteHandler<typeof createMiyabiRouteV2, AppEnv> = 
     console.error('[createMiyabiHandlerV2] エラーが発生しました．', err);
     return c.json(
       {
-        message: err.message || '雅作成処理中に不明なエラーが発生しました．',
+        message: internalErrorMessage(err, c.get('config').NODE_ENV),
         statusCode: 500,
         error: 'Internal Server Error',
       },

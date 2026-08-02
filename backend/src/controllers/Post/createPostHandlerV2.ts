@@ -2,6 +2,8 @@ import { type RouteHandler } from '@hono/zod-openapi';
 import type { createPostRouteV2 } from '../../routes/Post/createPostRouteV2.js';
 import type { CreatePostDTO } from '../../services/post/iPostService.js';
 import type { AppEnv } from '../../di/container.js';
+import { getUserId } from '../../middleware/auth.js';
+import { internalErrorMessage } from '../../middleware/errorHandler.js';
 
 const createPostHandlerV2: RouteHandler<typeof createPostRouteV2, AppEnv> = async (c) => {
   const { postService } = c.get('container');
@@ -11,7 +13,7 @@ const createPostHandlerV2: RouteHandler<typeof createPostRouteV2, AppEnv> = asyn
     const formData = await c.req.formData();
     const original = formData.get('original') as string;
     const image = (formData.get('image') as File) || null; // 画像がない場合はnull
-    const user_id = formData.get('user_id') as string;
+    const user_id = getUserId(c);
 
     // バリデーション
     if (!original || !user_id) {
@@ -38,7 +40,7 @@ const createPostHandlerV2: RouteHandler<typeof createPostRouteV2, AppEnv> = asyn
     console.error('[createPostHandlerV2] エラーが発生しました．', err);
     return c.json(
       {
-        message: err.message || '投稿処理中に不明なエラーが発生しました．',
+        message: internalErrorMessage(err, c.get('config').NODE_ENV),
         statusCode: 500,
         error: 'Internal Server Error',
       },

@@ -9,7 +9,7 @@ type newsTankaSchema = z.infer<typeof newsTankaSchema>;
 const newsTankaHandler: RouteHandler<typeof newsTankaRoute, AppEnv> = async (c) => {
   const container = c.get('container');
   const config = c.get('config');
-  const { apiKey } = await c.req.json<newsTankaSchema>();
+  const { apiKey } = c.req.valid('json');
 
   /* --- 色々処理 --- */
 

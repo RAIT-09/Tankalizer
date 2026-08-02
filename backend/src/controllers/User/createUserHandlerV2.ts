@@ -3,9 +3,17 @@ import { type RouteHandler } from '@hono/zod-openapi';
 import type { createUserRouteV2 } from '../../routes/User/createUserRouteV2.js';
 import type { CreateUserDTO } from '../../services/user/iUserService.js';
 import type { AppEnv } from '../../di/container.js';
+import { UnauthorizedError } from '../../utils/errors.js';
+import { internalErrorMessage } from '../../middleware/errorHandler.js';
 
 const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, AppEnv> = async (c) => {
   const { userService } = c.get('container');
+  const verifiedAccount = c.get('provisioning');
+
+  if (!verifiedAccount) {
+    throw new UnauthorizedError('認証が必要です．');
+  }
+
   try {
     // リクエストからデータを取得
     const formData = await c.req.formData();
@@ -20,7 +28,7 @@ const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, AppEnv> = asyn
     console.log('[Handler] /v2/user へのリクエストを受け付けました．', userDto);
 
     // ユーザー作成処理
-    const createUserResponse = await userService.createUser(userDto);
+    const createUserResponse = await userService.createUser(userDto, verifiedAccount);
 
     // ユーザーが既に作成済みの場合
     if (createUserResponse.type === 'existing') {
@@ -72,7 +80,7 @@ const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, AppEnv> = asyn
     console.error('[Handler] ユーザー作成処理中にエラーが発生しました．', err);
     return c.json(
       {
-        message: err.message,
+        message: internalErrorMessage(err, c.get('config').NODE_ENV),
         statusCode: 500,
         error: 'Internal Server Error',
       },
