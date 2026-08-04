@@ -98,18 +98,15 @@ const Timeline = ({ limit, max, targetUserId, mode = 'timeline', className }: Ti
         limit: limit,
         cursor: offsetIdRef.current,
         filterByUserId: targetUserId,
-        userId: session.data?.user_id ?? '',
       });
     } else if (mode === 'following') {
       newPosts = await fetchPostsForFollowing({
         limit: limit,
         cursor: offsetIdRef.current,
-        userId: session.data?.user_id ?? '',
       });
     } else if (mode === 'ranking') {
       newPosts = await fetchRanking({
         limit: max,
-        userId: session.data?.user_id ?? '',
       });
     }
     if (newPosts && newPosts.length > 0) {

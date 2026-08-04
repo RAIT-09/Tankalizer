@@ -2,7 +2,7 @@ import { z } from '@hono/zod-openapi';
 
 // リクエストの型
 export const getPostSchema = z.object({
-  limit: z.number().optional().default(10).openapi({
+  limit: z.number().int().min(1).max(100).optional().default(10).openapi({
     example: 10,
     description: '取得する投稿の数',
   }),
@@ -13,10 +13,6 @@ export const getPostSchema = z.object({
   filterByUserId: z.string().optional().openapi({
     example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
     description: '特定のユーザーの投稿を取得するためのユーザーid',
-  }),
-  viewerId: z.string().optional().openapi({
-    example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
-    description: '閲覧者のユーザーid',
   }),
 });
 

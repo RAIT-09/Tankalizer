@@ -4,18 +4,37 @@ import {
   type CreateUserRepoDTO,
   type User,
 } from '../../repositories/user/iUserRepository.js';
-import { type IImageService } from '../image/iImageService.js';
 import { compressIconImage } from '../../utils/compressImage.js';
-import { env } from '../../config/env.js';
 import type { IIconService } from '../icon/iIconService.js';
 import { generateUuid } from '../../utils/generateUuid.js';
-import type { CreateUserResponse } from './iUserService.js';
+import { UnauthorizedError } from '../../utils/errors.js';
+import type { CreateUserResponse, VerifiedOAuthAccount } from './iUserService.js';
+
+const GITHUB_AVATAR_PATTERN = /^https:\/\/avatars\.githubusercontent\.com\/u\/(\d+)(?:[/?]|$)/;
+
+/**
+ * 旧DBからの乗り換えを許可してよいかを判定する。
+ * GitHub のアイコンURLは末尾にアカウントIDを含むので、OAuth で確認済みのIDと突き合わせられる。
+ * Google はURLからアカウントIDを取り出せず所有を確認できないため、乗り換えを許可しない。
+ */
+const isOwnedByVerifiedAccount = (
+  userDto: CreateUserDTO,
+  verifiedAccount: VerifiedOAuthAccount
+): boolean => {
+  if (verifiedAccount.provider !== 'github') {
+    return false;
+  }
+
+  const accountId = GITHUB_AVATAR_PATTERN.exec(userDto.icon_url)?.[1];
+  return accountId !== undefined && accountId === verifiedAccount.providerAccountId;
+};
 
 export class UserService implements IUserService {
   // userRepositoryのインスタンスをコンストラクタで受け取る
   constructor(
     private readonly userRepository: IUserRepository,
-    private readonly iconService: IIconService
+    private readonly iconService: IIconService,
+    private readonly defaultIconPath: string
   ) {}
 
   /**
@@ -25,19 +44,36 @@ export class UserService implements IUserService {
    * @returns {Promise<User>} 作成または取得したユーザー情報
    * @throws {Error} DBエラーなど、その他の予期せぬエラー
    */
-  async createUser(userDto: CreateUserDTO): Promise<CreateUserResponse> {
+  async createUser(
+    userDto: CreateUserDTO,
+    verifiedAccount: VerifiedOAuthAccount
+  ): Promise<CreateUserResponse> {
+    // 本文の connect_info を信じると、被害者のメールを送るだけでそのユーザーを引き当てられてしまう
+    const { email: connectInfo, provider: oauthApp } = verifiedAccount;
+
     console.log(
-      `[UserService#createUser] ユーザー作成処理を開始します．(oauth_app: ${userDto.oauth_app}, connect_info: ${userDto.connect_info})`
+      `[UserService#createUser] ユーザー作成処理を開始します．(oauth_app: ${oauthApp}, connect_info: ${connectInfo})`
     );
 
     // ユーザーが既に存在するかどうかをリポジトリに問い合わせる
-    const existingUser = await this.userRepository.findByEmail(
-      userDto.connect_info,
-      userDto.oauth_app
-    );
+    const existingUser = await this.userRepository.findByEmail(connectInfo, oauthApp);
 
     // ユーザーが既に存在した場合
     if (existingUser) {
+      // メールは provider 側で別アカウントへ再割り当てされうるため、
+      // 記録済みなら OAuth アカウントIDまで一致することを求める
+      if (existingUser.provider_account_id === null) {
+        await this.userRepository.linkProviderAccount(
+          existingUser.id,
+          verifiedAccount.providerAccountId
+        );
+      } else if (existingUser.provider_account_id !== verifiedAccount.providerAccountId) {
+        console.warn(
+          `[UserService#createUser] OAuthアカウントIDが一致しません．ログインを拒否します．(user_id: ${existingUser.id})`
+        );
+        throw new UnauthorizedError('このアカウントではログインできません．');
+      }
+
       console.log(
         `[UserService#createUser] ユーザーは既に存在します．処理を終了します．(user_id: ${existingUser.id})`
       );
@@ -50,8 +86,20 @@ export class UserService implements IUserService {
 
     // old_icon_urlが一致するユーザーが存在した場合
     if (existingUserByIcon) {
-      const updatedUser = await this.updateExistingUser(existingUserByIcon, userDto);
-      return { user: updatedUser, type: 'migrated' };
+      // アイコンURLは公開情報なので、それだけで既存アカウントを乗っ取れないよう
+      // OAuth で確認済みのアカウントIDと一致することまで求める
+      if (isOwnedByVerifiedAccount(userDto, verifiedAccount)) {
+        const updatedUser = await this.updateExistingUser(
+          existingUserByIcon,
+          userDto,
+          verifiedAccount
+        );
+        return { user: updatedUser, type: 'migrated' };
+      }
+
+      console.warn(
+        `[UserService#createUser] old_icon_urlは一致しましたが、OAuthアカウントを確認できないため乗り換えを行いません．(user_id: ${existingUserByIcon.id})`
+      );
     }
 
     // ユーザーが存在しない場合，リポジトリに新しいユーザーの作成を依頼する
@@ -64,16 +112,17 @@ export class UserService implements IUserService {
     const userRepoDto: CreateUserRepoDTO = {
       id: userId,
       name: userDto.name,
-      oauth_app: userDto.oauth_app,
-      connect_info: userDto.connect_info,
+      oauth_app: oauthApp,
+      connect_info: connectInfo,
       profile_text: userDto.profile_text,
       icon_url: key,
+      provider_account_id: verifiedAccount.providerAccountId,
     };
 
     await this.userRepository.create(userRepoDto);
 
     // 作成したユーザー情報を再度取得して返す
-    const newUser = await this.userRepository.findByEmail(userDto.connect_info, userDto.oauth_app);
+    const newUser = await this.userRepository.findByEmail(connectInfo, oauthApp);
 
     if (!newUser) {
       // 万が一，作成直後にユーザーが見つからない場合はエラーを投げる
@@ -104,11 +153,11 @@ export class UserService implements IUserService {
         // S3にアップロード
         return await this.iconService.updatedIcon(compressedFile, userId);
       } else {
-        return env.DEFAULT_ICON_PATH;
+        return this.defaultIconPath;
       }
     } catch (error) {
       console.error('[UserService#uploadIcon] 画像のアップロードに失敗しました．');
-      return env.DEFAULT_ICON_PATH;
+      return this.defaultIconPath;
     }
   }
 
@@ -118,7 +167,11 @@ export class UserService implements IUserService {
    * @param userDto - 更新するユーザー情報
    * @returns {Promise<User>} 更新後のユーザー情報
    */
-  private async updateExistingUser(existingUser: User, userDto: CreateUserDTO): Promise<User> {
+  private async updateExistingUser(
+    existingUser: User,
+    userDto: CreateUserDTO,
+    verifiedAccount: VerifiedOAuthAccount
+  ): Promise<User> {
     console.log(
       `[UserService#updateExistingUser] old_icon_urlが一致するユーザーが見つかりました．情報を更新します．(user_id: ${existingUser.id})`
     );
@@ -129,9 +182,10 @@ export class UserService implements IUserService {
     // connect_infoとicon_urlを更新
     await this.userRepository.updateConnectInfoAndIcon(
       existingUser.id,
-      userDto.connect_info,
-      userDto.oauth_app,
-      newIconUrl
+      verifiedAccount.email,
+      verifiedAccount.provider,
+      newIconUrl,
+      verifiedAccount.providerAccountId
     );
 
     // 更新後のユーザー情報を取得して返す

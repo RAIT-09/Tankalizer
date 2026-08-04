@@ -2,17 +2,13 @@ import { z } from '@hono/zod-openapi';
 
 // リクエストの型
 export const getFollowingPostSchema = z.object({
-  limit: z.number().optional().default(10).openapi({
+  limit: z.number().int().min(1).max(100).optional().default(10).openapi({
     example: 10,
     description: '取得する投稿の数',
   }),
   cursor: z.string().optional().openapi({
     example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
     description: 'どの投稿より古いのを取得するか指定する投稿id',
-  }),
-  viewerId: z.string().openapi({
-    example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
-    description: '閲覧者のユーザーid',
   }),
 });
 

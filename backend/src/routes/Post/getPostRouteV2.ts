@@ -1,3 +1,4 @@
+import { optionalAuth } from '../../middleware/auth.js';
 import { z } from '@hono/zod-openapi';
 import { createRoute } from '@hono/zod-openapi';
 import { getPostSchema, getPostResponseSchema } from '../../schema/Post/getPostSchemaV2.js';
@@ -11,6 +12,7 @@ const ErrorResponseSchema = z.object({
 });
 
 export const getPostRouteV2 = createRoute({
+  middleware: [optionalAuth] as const,
   method: 'post',
   path: '/v2/timeline',
   tags: ['Post V2'],

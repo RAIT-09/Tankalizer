@@ -86,7 +86,6 @@ const User = ({ profile, className }: UserProps) => {
                 setDialogOpen(true);
               } else {
                 const result = await follow({
-                  followerId: session.data?.user_id ?? '',
                   followeeId: profile.userId,
                 });
                 if (result) {
@@ -108,7 +107,6 @@ const User = ({ profile, className }: UserProps) => {
         yesCallback={async () => {
           console.log('はい');
           const result = await unfollow({
-            followerId: session.data?.user_id ?? '',
             followeeId: profile.userId,
           });
           if (!result) {

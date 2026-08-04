@@ -1,35 +1,19 @@
 import { type RouteHandler } from '@hono/zod-openapi';
-import type { Context } from 'hono';
-import { z } from 'zod';
 
 import type { createUserRouteV2 } from '../../routes/User/createUserRouteV2.js';
-import { type IUserService } from '../../services/user/iUserService.js';
-import { type IUserRepository } from '../../repositories/user/iUserRepository.js';
-import { UserService } from '../../services/user/userService.js';
-import { UserRepository } from '../../repositories/user/userRepository.js';
 import type { CreateUserDTO } from '../../services/user/iUserService.js';
+import type { AppEnv } from '../../di/container.js';
+import { UnauthorizedError } from '../../utils/errors.js';
+import { internalErrorMessage } from '../../middleware/errorHandler.js';
 
-import { S3StorageService } from '../../services/storage/s3StorageService.js';
-import type { IStorageService } from '../../services/storage/iStorageService.js';
-import { S3Client } from '@aws-sdk/client-s3';
-import { env } from '../../config/env.js';
-import { IconService } from '../../services/icon/iconService.js';
-import type { IIconService } from '../../services/icon/iIconService.js';
+const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, AppEnv> = async (c) => {
+  const { userService } = c.get('container');
+  const verifiedAccount = c.get('provisioning');
 
-const userRepository: IUserRepository = new UserRepository();
-// s3設定
-const s3Client = new S3Client({
-  region: 'ap-northeast-1',
-  credentials: {
-    accessKeyId: env.S3_ACCESS_KEY_ID,
-    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-  },
-});
-const storageService: IStorageService = new S3StorageService(s3Client, env.S3_BUCKET_NAME);
-const iconService: IIconService = new IconService(storageService);
-const userService: IUserService = new UserService(userRepository, iconService);
+  if (!verifiedAccount) {
+    throw new UnauthorizedError('認証が必要です．');
+  }
 
-const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, {}> = async (c: Context) => {
   try {
     // リクエストからデータを取得
     const formData = await c.req.formData();
@@ -44,7 +28,7 @@ const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, {}> = async (c
     console.log('[Handler] /v2/user へのリクエストを受け付けました．', userDto);
 
     // ユーザー作成処理
-    const createUserResponse = await userService.createUser(userDto);
+    const createUserResponse = await userService.createUser(userDto, verifiedAccount);
 
     // ユーザーが既に作成済みの場合
     if (createUserResponse.type === 'existing') {
@@ -96,7 +80,7 @@ const createUserHandlerV2: RouteHandler<typeof createUserRouteV2, {}> = async (c
     console.error('[Handler] ユーザー作成処理中にエラーが発生しました．', err);
     return c.json(
       {
-        message: err.message,
+        message: internalErrorMessage(err, c.get('config').NODE_ENV),
         statusCode: 500,
         error: 'Internal Server Error',
       },

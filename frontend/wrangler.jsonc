@@ -1,0 +1,22 @@
+{
+  "name": "tankalizer-web",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "main": ".open-next/worker.js",
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "services": [{ "binding": "API", "service": "tankalizer-api" }],
+  // secrets（wrangler secret put で登録、ローカルは .dev.vars）:
+  //   AUTH_SECRET / GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET / GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
+  //   DISCORD_WEBHOOK_URL
+  //   BACKEND_JWT_SECRET（API Worker と同じ値。ここがずれると全リクエストが 401 になる）
+  "vars": {
+    "AUTH_URL": "https://tankalizer.jp",
+    "BACKEND_URL": "https://api.tankalizer.jp/v2"
+  }
+}

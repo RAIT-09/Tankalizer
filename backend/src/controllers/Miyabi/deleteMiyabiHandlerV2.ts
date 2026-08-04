@@ -1,35 +1,20 @@
 import { z, type RouteHandler } from '@hono/zod-openapi';
-import type { Context } from 'hono';
-import {
-  type IMiyabiService,
-  NotFoundError,
-  ConflictError,
-} from '../../services/miyabi/iMiyabiService.js';
-import { type IMiyabiRepository } from '../../repositories/miyabi/iMiyabiRepository.js';
-import { type IPostRepository } from '../../repositories/post/iPostRepository.js';
-import { PostRepository } from '../../repositories/post/postRepository.js';
-import { type IUserRepository } from '../../repositories/user/iUserRepository.js';
-import { UserRepository } from '../../repositories/user/userRepository.js';
-import { MiyabiService } from '../../services/miyabi/miyabiService.js';
-import { MiyabiRepository } from '../../repositories/miyabi/miyabiRepository.js';
+import { NotFoundError, ConflictError } from '../../services/miyabi/iMiyabiService.js';
 import type { deleteMiyabiSchema } from '../../schema/Miyabi/deleteMiyabiSchemaV2.js';
 import type { deleteMiyabiRouteV2 } from '../../routes/Miyabi/deleteMiyabiRouteV2.js';
+import type { AppEnv } from '../../di/container.js';
+import { getUserId } from '../../middleware/auth.js';
+import { internalErrorMessage } from '../../middleware/errorHandler.js';
 
 type deleteMiyabiSchema = z.infer<typeof deleteMiyabiSchema>;
 
-const deleteMiyabiHandlerV2: RouteHandler<typeof deleteMiyabiRouteV2, {}> = async (c: Context) => {
-  const miyabiRepository: IMiyabiRepository = new MiyabiRepository();
-  const postRepository: IPostRepository = new PostRepository();
-  const userRepository: IUserRepository = new UserRepository();
-  const miyabiService: IMiyabiService = new MiyabiService(
-    miyabiRepository,
-    postRepository,
-    userRepository
-  );
+const deleteMiyabiHandlerV2: RouteHandler<typeof deleteMiyabiRouteV2, AppEnv> = async (c) => {
+  const { miyabiService } = c.get('container');
 
   try {
     // リクエストからデータを取得
-    const { user_id, post_id } = await c.req.json<deleteMiyabiSchema>();
+    const { post_id } = c.req.valid('json');
+    const user_id = getUserId(c);
 
     // サービスを呼び出す
     const result = await miyabiService.deleteMiyabi({ user_id, post_id });
@@ -47,7 +32,7 @@ const deleteMiyabiHandlerV2: RouteHandler<typeof deleteMiyabiRouteV2, {}> = asyn
     console.error('[deleteMiyabiHandlerV2] エラーが発生しました．', err);
     return c.json(
       {
-        message: err.message || '雅削除処理中に不明なエラーが発生しました．',
+        message: internalErrorMessage(err, c.get('config').NODE_ENV),
         statusCode: 500,
         error: 'Internal Server Error',
       },

@@ -1,9 +1,8 @@
 // サーバアクション
 'use server';
 
+import { apiFetch } from '@/lib/apiClient';
 import { ProfileTypes } from '@/types/profileTypes';
-
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
 
 // response の型定義
 interface ProfileResponse {
@@ -27,22 +26,19 @@ interface ProfileResponse {
  * @param {Object} params - うたトモユーザ取得のためのパラメータオブジェクト
  * @param {number} params.limit - 取得するユーザの最大件数
  * @param {string} params.cursor - 取得を開始するユーザのID（オフセット）
- * @param {string} params.userId - 閲覧ユーザのID
  * @returns {Promise<ProfileTypes[]>} ユーザデータの配列を返すPromise．ユーザが存在しない場合は空配列を返す．
  */
 export const fetchMutuals = async ({
   limit,
   cursor,
   targetUserId,
-  userId,
 }: {
   limit: number;
   cursor?: string;
   targetUserId?: string;
-  userId?: string;
 }): Promise<ProfileTypes[] | []> => {
   try {
-    const res = await fetch(`${backendUrl}/profile/mutual-following`, {
+    const res = await apiFetch('/v2/profile/mutual-following', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -51,7 +47,6 @@ export const fetchMutuals = async ({
         limit: limit,
         cursor: cursor,
         user_id: targetUserId,
-        viewer_id: userId,
       }),
     });
 
@@ -87,22 +82,19 @@ export const fetchMutuals = async ({
  * @param {Object} params - フォローユーザ取得のためのパラメータオブジェクト
  * @param {number} params.limit - 取得するユーザの最大件数
  * @param {string} params.cursor - 取得を開始するユーザのID（オフセット）
- * @param {string} params.userId - 閲覧ユーザのID
  * @returns {Promise<ProfileTypes[]>} ユーザデータの配列を返すPromise．ユーザが存在しない場合は空配列を返す．
  */
 export const fetchFollowing = async ({
   limit,
   cursor,
   targetUserId,
-  userId,
 }: {
   limit: number;
   cursor?: string;
   targetUserId?: string;
-  userId?: string;
 }): Promise<ProfileTypes[] | []> => {
   try {
-    const res = await fetch(`${backendUrl}/profile/following`, {
+    const res = await apiFetch('/v2/profile/following', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -111,7 +103,6 @@ export const fetchFollowing = async ({
         limit: limit,
         cursor: cursor,
         user_id: targetUserId,
-        viewer_id: userId,
       }),
     });
 

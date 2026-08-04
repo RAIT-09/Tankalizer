@@ -3,7 +3,7 @@ export type Profile = {
   user_name: string;
   profile_text: string;
   icon_url: string;
-  created_at: Date;
+  created_at: string;
   is_developer: boolean;
   total_miyabi: number;
   total_post: number;

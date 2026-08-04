@@ -2,13 +2,9 @@ import { z } from '@hono/zod-openapi';
 
 // リクエストの型
 export const getMiyabiRankingSchema = z.object({
-  limit: z.number().default(10).openapi({
+  limit: z.number().int().min(1).max(100).default(10).openapi({
     example: 10,
     description: '取得する投稿の数',
-  }),
-  viewerId: z.string().optional().openapi({
-    example: '8e21e23a-eb9f-11ef-9ce7-0242ac130002',
-    description: '閲覧者のユーザーid',
   }),
 });
 

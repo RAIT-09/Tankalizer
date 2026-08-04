@@ -30,7 +30,6 @@ const Profile = () => {
       if (!userId) return;
       const data = await fetchProfile({
         targetUserId: userId as string,
-        userId: session.data?.user_id ?? '',
       });
       if (!data) {
         router.replace('/user-not-found');

@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tankalizer-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tankalizer",
+      // デプロイ前に `wrangler d1 create tankalizer` で発行された ID に差し替える（ローカル開発はこのままで動く）
+      "database_id": "64267243-4327-4d66-a69f-487cca7fedef",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // 旧 infra/lambda（EventBridge）のニュース自動投稿に相当。カットオーバーまで一時停止中（再開時は ["0 */6 * * *"] 等に戻す）
+  "triggers": {
+    "crons": []
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "FRONTEND_URL": "https://tankalizer.jp",
+    "S3_BUCKET_NAME": "202502-test-bucket",
+    "CDN_URL": "image.tankalizer.jp"
+  },
+  // secrets（wrangler secret put で登録、ローカルは .dev.vars）:
+  //   GEMINI_API_KEY / NEWS_POST_API_KEY / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY
+  //   NEWS_USER_ID / OUR_ID / DEFAULT_ICON_PATH
+  //   BACKEND_JWT_SECRET（frontend Worker と同じ値。ここがずれると全リクエストが 401 になる）
+  "rules": [{ "type": "Text", "globs": ["**/*.txt"] }],
+  "observability": { "enabled": true }
+}

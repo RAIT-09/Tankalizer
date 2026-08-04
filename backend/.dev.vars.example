@@ -1,0 +1,15 @@
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+GEMINI_API_KEY=your-gemini-api-key
+NEWS_POST_API_KEY=your-news-post-api-key
+NEWS_USER_ID=news-user-uuid
+S3_ACCESS_KEY_ID=your-s3-access-key
+S3_SECRET_ACCESS_KEY=your-s3-secret-key
+S3_BUCKET_NAME=your-bucket-name
+CDN_URL=image.tankalizer.jp
+OUR_ID=our-account-id
+DEFAULT_ICON_PATH=default/icon.png
+# frontend 側と同じ値にする（32文字以上）。`openssl rand -base64 32` などで生成する
+BACKEND_JWT_SECRET=replace-with-a-32-plus-character-secret
+JWT_ISSUER=tankalizer-web
+JWT_AUDIENCE=tankalizer-api

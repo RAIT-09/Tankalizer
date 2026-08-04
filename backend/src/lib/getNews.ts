@@ -39,7 +39,7 @@ type NewsResponse = NewsSuccess | NewsError;
 // ニュース取得先のURL
 const RSS_FEED_URL = 'https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja';
 
-const getNews = async (): Promise<NewsResponse> => {
+const getNews = async (nodeEnv: string): Promise<NewsResponse> => {
   try {
     const response = await fetch(RSS_FEED_URL);
 
@@ -60,14 +60,14 @@ const getNews = async (): Promise<NewsResponse> => {
     // XMLをオブジェクトに変換
     const data: RSSFormat = parser.parse(xmlText);
 
-    debugLog('===== RSS構造の確認 =====');
-    debugLog(JSON.stringify(data, null, 2));
+    debugLog('===== RSS構造の確認 =====', nodeEnv);
+    debugLog(JSON.stringify(data, null, 2), nodeEnv);
 
     // RSS構造に基づいてニュース記事を取得
     const items = data.rss.channel.item;
 
-    debugLog('===== items =====');
-    debugLog(items);
+    debugLog('===== items =====', nodeEnv);
+    debugLog(items, nodeEnv);
 
     if (!items) {
       throw new Error('ニュースアイテムが見つかりません。');
@@ -81,7 +81,7 @@ const getNews = async (): Promise<NewsResponse> => {
       newsItems = [items];
     }
 
-    debugLog(`===== 取得したアイテム数: ${newsItems.length} =====`);
+    debugLog(`===== 取得したアイテム数: ${newsItems.length} =====`, nodeEnv);
 
     // タイトルとリンクが含まれているニュースを全て候補として収集
     const validNewsItems: RSSItem[] = [];
@@ -90,7 +90,7 @@ const getNews = async (): Promise<NewsResponse> => {
 
       if (newsTemp.title && newsTemp.link) {
         validNewsItems.push(newsTemp);
-        debugLog(`===== 有効なニュースを発見: ${i} =====`);
+        debugLog(`===== 有効なニュースを発見: ${i} =====`, nodeEnv);
       }
     }
 
@@ -103,7 +103,8 @@ const getNews = async (): Promise<NewsResponse> => {
     const news = validNewsItems[randomIndex];
 
     debugLog(
-      `===== 候補数: ${validNewsItems.length}, 選択されたインデックス: ${randomIndex} =====`
+      `===== 候補数: ${validNewsItems.length}, 選択されたインデックス: ${randomIndex} =====`,
+      nodeEnv
     );
 
     const result: NewsSuccess = {
@@ -115,8 +116,8 @@ const getNews = async (): Promise<NewsResponse> => {
       },
     };
 
-    debugLog('===== 最終的に選択されたニュース =====');
-    debugLog(result);
+    debugLog('===== 最終的に選択されたニュース =====', nodeEnv);
+    debugLog(result, nodeEnv);
     return result;
   } catch (error: any) {
     console.error(error);

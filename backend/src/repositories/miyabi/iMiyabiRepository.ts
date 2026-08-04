@@ -1,10 +1,8 @@
-import mysql from 'mysql2';
-
 export type Miyabi = {
   id: string;
   user_id: string;
   post_id: string;
-  created_at: Date;
+  created_at: string;
 };
 
 export type RankedPost = {
@@ -13,7 +11,7 @@ export type RankedPost = {
   original: string;
   tanka: string[];
   image_path: string | null;
-  created_at: Date;
+  created_at: string;
   is_developer: boolean;
   user_id: string;
   user_name: string;
@@ -23,8 +21,8 @@ export type RankedPost = {
 };
 
 export interface IMiyabiRepository {
-  findMiyabi(userId: string, postId: string, dbc?: mysql.Connection): Promise<Miyabi | null>;
-  create(userId: string, postId: string, dbc?: mysql.Connection): Promise<void>;
-  delete(userId: string, postId: string, dbc?: mysql.Connection): Promise<void>;
+  findMiyabi(userId: string, postId: string): Promise<Miyabi | null>;
+  create(userId: string, postId: string): Promise<void>;
+  delete(userId: string, postId: string): Promise<number>;
   getMiyabiRanking(limit: number, viewerId?: string): Promise<RankedPost[]>;
 }
